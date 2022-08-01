@@ -6,7 +6,7 @@ linux-embedded:
 
 run-linux-embedded:
 	qemu-system-x86_64 \
-    -kernel builds/linux-tyche-embedded/vmlinux \
+    -kernel images/vmlinux \
     -nographic -append "earlyprintk=serial,ttyS0 console=ttyS0" \
 		-s \
 		-m 8G \
