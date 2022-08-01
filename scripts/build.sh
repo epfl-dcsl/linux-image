@@ -4,6 +4,7 @@
 source `pwd`/scripts/common.sh
 
 LINUX_ROOT=$TOP/linux
+IMAGES=images
 
 # Crash on errors
 set -e
@@ -23,6 +24,11 @@ build_linux_embedded() {
   rm $LINUX_ROOT/arch/x86/configs/tyche_linux_embedded_ramfs_defconfig
 
   LOG "Done building linux embedded in $target"
+  LOG "Copying files"
+
+  cp $target/vmlinux $IMAGES/ 
+  cp $target/vmlinux-gdb.py $IMAGES/
+  LOG "Done copying result"
 }
 
 build_linux_embedded
