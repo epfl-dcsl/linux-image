@@ -27,6 +27,7 @@ build_linux_embedded() {
   LOG "Copying files"
 
   cp $target/vmlinux $IMAGES/ 
+  cp $target/arch/x86_64/boot/bzImage $IMAGES/
   #cp $target/vmlinux-gdb.py $IMAGES/
   LOG "Done copying result"
 }
