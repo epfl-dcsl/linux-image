@@ -8,8 +8,8 @@
 # Helper functions
 source `pwd`/scripts/common.sh
 
-mkdir -p $DOWNLOADS
-mkdir -p $BUILDS
+#mkdir -p $DOWNLOADS
+#mkdir -p $BUILDS
 
 # Exit upon failure
 set -e
@@ -79,3 +79,14 @@ build_initramfs() {
   repack_ramfs
 }
 
+if [[ "$#" == "0" ]]; then 
+  echo "Nothing to do"
+  exit 1
+fi
+
+if [[ "$1" == "repack" ]]; then
+  repack_ramfs
+  exit 0
+fi
+
+echo "Nothing to do"
