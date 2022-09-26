@@ -17,6 +17,14 @@ and to update submodules if you already cloned without submodules
 git submodule update --init --recursive
 ```
 
+## Important
+
+you should execute 
+```
+sudo cp -av /dev/{console,null,tty,sda1} builds/initramfs/x86-busybox/dev/
+./scripts/setup.sh repack
+```
+
 ## Map
 
 For convenience, we pre-compiled the linux image and track it using `git lfs`.
