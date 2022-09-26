@@ -1,6 +1,7 @@
 all: linux-embedded
 
 linux-embedded:
+	./scripts/setup.sh repack
 	./scripts/build.sh
 
 

@@ -50,6 +50,10 @@ repack_ramfs() {
     LOG "Initramfs not found in $target"
     exit 1
   fi
+  if [ ! -e "$target/dev/console" ] || [ ! -e "$target/dev/null" ] || [ ! -e "$target/dev/tty" ]; then
+    LOG "Error: run sudo cp -av /dev/{null,console,tty,sda1} $target/dev/"
+    exit 1
+  fi
   cd $INITRAMFS
   find . | cpio -H newc -o > ../initramfs.cpio
   cd ..
