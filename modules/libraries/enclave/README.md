@@ -93,7 +93,7 @@ As Tyche's implementation needs to remain as simple as possible in order to be v
 This separation of concerns allows Tyche to remain agnostic of page table mappings, abbreviated as `cr3`, while giving us access, through the driver, to guest virtual to physical mappings.
 
 Figure 2 provides an overview of a Linux guest executing a user program `a.out` that spawns an enclave `encl.out` using our `enclave driver` kernel module.
-The figure provides letter-labeled arrows for enclave create and number-labeled arrows for transitions between the two trust domains (`a.out` and `encl.out`).
+The figure provides letter-labeled arrows for enclave creation and number-labeled arrows for transitions between the two trust domains (`a.out` and `encl.out`).
 
 Figure 3 represents the three address spaces that belong to the three trust domains `a.out`, the `T` domain (as brefiely mentionned in the background section), and `encl.out`, in a vein similar to Figure 1.
 For ease of understanding, the transition arrows from Figure 2 are also represented on Figure 3 with the corresponding number-labels.
