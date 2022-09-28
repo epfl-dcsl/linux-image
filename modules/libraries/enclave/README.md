@@ -29,15 +29,14 @@ The managing domain can further map resources into the enclave, with its approva
 Such resources are shared between the managing domain and the enclave and are not confidential or integrity protected.
 
 Unlike Intel SGX, an enclave can execute in ring 3, ring 0, or both.
+This allows our enclave design to emulate both SGX and TrustZone.
+
 Unlike Intel SGX, an enclave only has access to the untrusted memory shared by the managing domain (rather than the entire ring 3 application memory).
 
-Similar to SGX, we allow visibility of enclaves only within the context of an untrusted address space.
-Each enclave is derived from a combination of a `managing trust domain` (an EPT table) and an `address space`, i.e., the program that instantiates the enclave.
-A program that instantiates multiple enclaves gets, for each of them, a reference handle, similar to UNIX file descriptors, that identifies an enclave with the context of that program.
-Another way to see this is that enclaves created within a virtual address space can occupy disjoint regions of the same virtual address space.
-
-*Unlike* SGX, this is not a strict requirements.
-Enclaves are allowed to reuse virtual addresses already in use in the `managing trust domain` and can do so safely thanks to our secured control transition mechanism (see Section 4).
+Similar to SGX, we can allow multiple enclaves to be instantiated from a single user process (`managing domain`).
+Unlike SGX, we do not have a strict requirement that address spaces of the enclaves and the user process do not overlap, thus giving us virtually an infinite number of possible enclaves per user process (in practice we are limited by the amount of resources on the machine, but you get the gist).
+That also removes the burden of the Intel SGX SDK to have enclave code compiled as a dynamic library, i.e., we are able to load even static, non PIE programs with predefined virtual mappings.
+A program that instantiates multiple enclaves gets, for each of them, a reference handle, similar to UNIX file descriptors, that identifies an enclave within the context of that program.
 
 ## 2. Background on VMFUNC
 
