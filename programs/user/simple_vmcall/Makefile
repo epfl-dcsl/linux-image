@@ -6,6 +6,10 @@ main: src/main.c
 hello: src/hello.c
 	gcc $< -o $@
 
+install: main hello
+	cp main ../../../builds/initramfs/x86-busybox/home/tyche/
+	cp hello ../../../builds/initramfs/x86-busybox/home/tyche/ 
+
 .PHONY: clean
 
 clean:
