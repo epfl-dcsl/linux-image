@@ -56,7 +56,7 @@ Furthermore, if `AddRegion.type == Confidential`, the `PhysFrames` are removed f
 
 Tyche is agnostic to the `cr3` and only deals in trust domains and EPTs. 
 As a result, we rely on a kernel driver to access guest virtual to guest physical mappings.
-The driver is also responsible for instantiating shadow page tables for the enclave, which allows tp protect the enclave's integrity by preventing `encl.out`'s mappings from being modified by the `a.out` domain.
+The driver is also responsible for instantiating shadow page tables for the enclave, which allows to protect the enclave's integrity by preventing `encl.out`'s mappings from being modified by the `a.out` domain.
 
 This shadow page table needs to have the following properties:
 
@@ -66,8 +66,11 @@ This shadow page table needs to have the following properties:
 * The leaf mappings for any `AddRegion.start` virtual address need to have the same guest physical address in both `cr3` and `shadow cr3` and be backed by the same `PhysRange` in the respective EPTs.
 
 The first requirement allows for a smooth `vmfunc` transition between the two domains.
+
 The second requirement ensures that concurrent modifications to the `a.out` domain's page tables will not affect the `encl.out` mappings.
+
 The third requirement ensures that `a.out` is unable to modify the `encl.out` mappings.
+
 The fourth requirement ensures that `encl.out` is initialized with the correct content and that both domains can exchange information via shared mappings. 
 
 This protocol implies that the driver must be able to allocate fresh pages from the kernel and grant them to the `encl.out` domain via interactions with tyche using vmcalls. 
@@ -79,11 +82,11 @@ This reduces the number of vmexit drastically.
 
 3. Tyche instantiation.
 
-Tyche creates a new trust dommain and instantiate an associated new EPT table for the `encl.out` domain. 
+Tyche creates a new trust dmmain and instantiate an associated new EPT table for the `encl.out` domain. 
 
 We might want tyche to register an expected register state (including cr3) for entries to the domain.
 This is to ensure that an enclave is always entered at the same point with a valid state and is crucial to avoid confused deputy attacks.
-Let's refer to that state as `ValidEnclState`, an assume that it is a held on a page specified by the `enclave driver` in the previous step of the protocol.
+Let's refer to that state as `ValidEnclState` and assume that it is a held on a page specified by the `enclave driver` in the previous step of the protocol.
 
 ---
 
@@ -124,6 +127,9 @@ Nevertheless, it could be implemented for comparison or as a first step to simpl
 Note also that, on the figure, `T` resides inside the enclave driver.
 We could very well imagine (and probably will implement it this way) that `T` is simply the kernel space (non-root ring 0) of the `encl.out` domain and created by the `enclave driver` at enclave creation.
 This `T` domain needs to abide by the same invariants described for `shadow cr3` and `cr3` with regards to the driver's address space.
+
+The first requirement for `shadow cr3` and `cr3` could be eschewed as we have a `ValidEnclState` frame.
+However, we believe that keeping this requirement might allow us to further optimize the transition by removing the `enclave driver` from the transition path (with a carefully crafted `encl.so` implementation).
 
 
 
