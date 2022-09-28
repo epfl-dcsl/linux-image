@@ -79,7 +79,7 @@ The Trampoline, noted `T`, and described below in more details solves these two 
 
 `T` has access to the VMCS's EPT table and can dynamically patch it with new entries.
 
-`T`'s virtual address space is reserved in both of the other address spaces, with one page implementing a `Gate` that allows safe `VMFUNC` transitions into/from `T`. 
+`T`'s virtual address space has overlaps with both of the other address spaces, with one page implementing a `Gate` that allows safe `VMFUNC` transitions into/from `T` with enclaves. 
 
 ## 2. Enclave Creation with the Tyche Enclave Driver for Linux
 
