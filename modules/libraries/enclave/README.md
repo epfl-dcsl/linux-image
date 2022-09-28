@@ -370,7 +370,7 @@ Virt Memory         | Access Rights | Physical Frame indices |
 This memory layout measurement is taken at sealing time with the help of the `enclave driver`, is part of the attestation and thus the hash generated and signed by tyche.
 Tyche could further include obfuscated (i.e., replacing physical addresses -- both guest and host -- with indices) summaries of operations performed before sealing and enclave. 
 
-The hash, called `Attestation`, is the enclave's signed measurement and is injected in the address space of the enclave as confidential pages, and referenced by the `ECS`.   
+The `Attestation` is the enclave's signed measurement and is injected in the address space of the enclave as confidential pages, and referenced by the `ECS`.   
 
 A remote party communicating with an enclave and performing an attestation would thus:
 
