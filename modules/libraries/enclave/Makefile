@@ -3,7 +3,7 @@ TARGET_MODULE:=tyche_enclave
 ## ———————————————————————— Use Tyche's Linux build ————————————————————————— ##
 BUILDSYSTEM_DIR ?= ../../../builds/linux-tyche-embedded/ 
 
-$(TARGET_MODULE)-objs := src/driver.o src/ioctl.o
+$(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o
 obj-m := $(TARGET_MODULE).o
 
 ## ——————————————————— Where to generate the build files ———————————————————— ##

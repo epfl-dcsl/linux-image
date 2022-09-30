@@ -1,5 +1,5 @@
-#ifndef _TYCHE_ENCLAVE
-#define _TYCHE_ENCLAVE
+#ifndef __INCLUDE_TYCHE_ENCLAVE_H__
+#define __INCLUDE_TYCHE_ENCLAVE_H__
 
 #ifdef _IN_MODULE
 #include <linux/ioctl.h>
@@ -10,10 +10,10 @@
 #endif
 
 // ———————————————————— Constants Defined in the Module ————————————————————— //
-const uint64_t TE_READ = 1 << 0;
-const uint64_t TE_WRITE = 1 << 1;
-const uint64_t TE_EXEC = 1 << 2;
-const uint64_t TE_USER = 1 << 3;
+#define TE_READ ((uint64_t)1 << 0)
+#define TE_WRITE ((uint64_t)1 << 1)
+#define TE_EXEC ((uint64_t)1 << 2)
+#define TE_USER ((uint64_t)1 << 3)
 
 // —————————————————————— Types Exposed by the Library —————————————————————— //
 typedef uint64_t tyche_encl_handle_t;
@@ -31,7 +31,7 @@ enum tyche_encl_mapping_t {
 /// Message type to add a new region.
 struct tyche_encl_add_region_t {
   /// Unique enclave reference capability.
-  tyche_encl_handle_t handle;
+  tyche_encl_handle_t* handle;
 
   /// Start address. Must be page aligned.
   uint64_t start;

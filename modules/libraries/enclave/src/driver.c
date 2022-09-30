@@ -3,8 +3,6 @@
 #include <linux/kernel.h>
 
 #include "tyche_enclave_ioctl.h"
-
-
 // —————————————————————————————— Module Info ——————————————————————————————— //
 
 MODULE_LICENSE("GPL");

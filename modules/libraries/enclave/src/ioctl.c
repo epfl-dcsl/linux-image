@@ -10,6 +10,7 @@
 #include "../include/tyche_enclave.h"
 #undef _IN_MODULE
 
+#include "internal/enclave.h"
 
 // —————————————————————— Global Driver Configuration ——————————————————————— //
 static char* device_name = "tyche_enclave";
@@ -70,6 +71,7 @@ int tyche_enclave_register(void)
     goto r_device;
   }
   pr_info("[TE]: Device Driver Insert Done!\n");
+  enclave_init();
   return 0; 
 
 r_device:
@@ -112,9 +114,16 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       handle.handle = tyche_ids++;
 
       //TODO initialize some internal structure etc. to keep track of the enclave.
+      if(add_enclave(handle.handle)) {
+        pr_err("[TE]: Error adding the enclave!\n");
+        return -1;
+      }
+
+      // Return handle number to the user.
       if (copy_to_user((struct tyche_encl_create_t*)arg, &handle, sizeof(handle)))
       {
         pr_err("[TE]: Error copying handle to user space.\n");
+        return -1;
       }
       break;
     case TYCHE_ENCLAVE_ADD_REGION:
@@ -124,7 +133,7 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       if (copy_from_user(&region, (struct tyche_encl_add_region_t*)arg, sizeof(region)))
       {
         pr_err("[TE]: Error copying handle from user space.\n");
-        break;
+        return -1;
       }
      
       //TODO now we can avoid TOCTOU and should check the enclave exists and add
@@ -133,6 +142,7 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
     default:
       pr_info("[TE]: Wrong command for tyche enclave driver.\n");
+      return -1;
       break;
   }
   return 0; 
