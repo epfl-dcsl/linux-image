@@ -11,13 +11,13 @@
 // ——————————————————————————— Type Declarations ———————————————————————————— //
 
 // Forward declarations.
-struct page_elem_t;
-struct region_elem_t;
+struct page_t;
+struct region_t;
 
 /// Describes a contiguous region to allocate to an enclave.
-struct region_elem_t {
+struct region_t {
   /// Double linked list.
-  dll_elem(struct region_elem_t, list);
+  dll_elem(struct region_t, list);
 
   /// Start address. Must be page aligned.
   uint64_t start;
@@ -36,29 +36,29 @@ struct region_elem_t {
 };
 
 /// Describes physical memory regions.
-struct page_elem_t {
-  dll_elem(struct pt_elem_t, list);
+struct page_t {
+  dll_elem(struct page_t, list);
   uint64_t start;
   uint64_t end;
 };
 
 /// Describes an enclave.
 struct enclave_t {
+  /// Enclaves belong to a list.
+  dll_elem(struct enclave_t, list);
   /// Unique enclave identifier
   tyche_encl_handle_t handle;
 
   /// List of regions that belong to this enclave.
-  dll_list(struct region_elem_t, regions);
+  dll_list(struct region_t, regions);
 
   /// List of pages used by page tables.
-  dll_list(struct page_elem_t, pts);
-
-  /// Enclaves belong to a list.
-  dll_elem(struct enclave_t, list);
+  dll_list(struct page_t, pts);
 };
 
 // —————————————————————————————— Enclave API ——————————————————————————————— //
 void enclave_init(void);
 int add_enclave(tyche_encl_handle_t handle);
+int add_region(struct tyche_encl_add_region_t* region);
 
 #endif

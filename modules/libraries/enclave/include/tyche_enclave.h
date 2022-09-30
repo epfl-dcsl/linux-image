@@ -31,7 +31,7 @@ enum tyche_encl_mapping_t {
 /// Message type to add a new region.
 struct tyche_encl_add_region_t {
   /// Unique enclave reference capability.
-  tyche_encl_handle_t* handle;
+  tyche_encl_handle_t handle;
 
   /// Start address. Must be page aligned.
   uint64_t start;

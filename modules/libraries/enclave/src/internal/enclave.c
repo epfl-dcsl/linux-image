@@ -1,6 +1,8 @@
+#include <linux/types.h>
 #include <linux/slab.h>
 #include "enclave.h"
 
+#define PAGE 0x1000
 // ——————————————————————— Globals to track enclaves ———————————————————————— //
 static dll_list(struct enclave_t, enclaves);
 
@@ -9,12 +11,58 @@ static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
   return first == second;
 }
 
+static int overlap(uint64_t s1, uint64_t e1, uint64_t s2, uint64_t e2)
+{
+  if ((s1 <= s2) && (s2 <= e1)) {
+    return 1;
+  }
+
+  if ((s2 <= s1) && (s1 <= e2)) {
+    return 1;
+  }
+  return 0;
+}
+
+static int region_check(struct tyche_encl_add_region_t* region)
+{
+  if (region == NULL) {
+    goto failure;
+  }
+  // Check alignment.
+  if (region->start % PAGE != 0 || region->end % PAGE != 0) {
+    goto failure;
+  }
+
+  // Check ordering
+  if (!(region->start < region->end)) {
+    goto failure;
+  }
+
+  // Check access rights, we do not allow execute with write.
+  if (region->flags == 0) {
+    goto failure;
+  }
+  if ((region->flags & TE_EXEC) && (region->flags & TE_WRITE)) {
+    goto failure;
+  }
+
+  if (region->tpe != Confidential && region->tpe != Shared) {
+    goto failure;
+  }
+
+  return 1;
+
+failure:
+  return 0;
+}
+
 void enclave_init(void)
 {
   dll_init_list((&enclaves));
 }
 
-
+/// Add a new enclave.
+/// The handle must be fresh.
 int add_enclave(tyche_encl_handle_t handle)
 {
   struct enclave_t* encl = NULL;
@@ -38,4 +86,71 @@ int add_enclave(tyche_encl_handle_t handle)
   // Add to the new enclave to the list.
   dll_add((&enclaves), encl, list);
   return 0;
+}
+
+/// Add a region to an existing enclave.
+int add_region(struct tyche_encl_add_region_t* region)
+{
+  struct enclave_t* encl = NULL; 
+  struct region_t* prev = NULL;
+  struct region_t* e_reg = NULL;
+  struct region_t* reg_iter = NULL;
+  dll_foreach((&enclaves), encl, list) {
+    if (encl->handle == region->handle)
+      break;
+  }
+  // We could not find the enclave.
+  if (!encl) {
+    return -1;
+  }
+ 
+  // Lightweight checks.
+  // Mappings to physical memory are checked later.
+  if (!region_check(region))
+  {
+    pr_err("[TE]: Malformed region.\n");
+    return -1;
+  }
+
+  // Allocate the region & set its attributes.
+  e_reg = kmalloc(sizeof(struct region_t), GFP_KERNEL);
+  if (e_reg) {
+    pr_err("[TE]: Failed to allocate a new region.\n");
+    return -1;
+  }
+  e_reg->start = region->start;
+  e_reg->end = region->end;
+  e_reg->flags = region->flags;
+  e_reg->tpe = region->tpe;
+
+  // Check that the full region is mapped and collect the relevant pages. 
+  //TODO check it's mapped.
+
+  // Check there is no overlap with other regions.
+  dll_foreach((&encl->regions), reg_iter, list) {
+    if (overlap(reg_iter->start, reg_iter->end, e_reg->start, e_reg->end)) {
+      goto failure;
+    } 
+    if (reg_iter->end <= e_reg->start) {
+      prev = reg_iter; 
+    }
+    if (reg_iter->start >= e_reg->end) {
+      break;
+    }
+  }
+
+  //TODO get the physical mappings.
+  //TODO check it is not already mapped in the enclave.
+  //TODO generate the cr3?
+  
+  // Add the region to the enclave
+  if (prev) {
+    dll_add_after((&encl->regions), e_reg, list, prev);
+  } else {
+    dll_add_first((&encl->regions), e_reg, list);
+  }
+  return 0;
+failure:
+  kfree(e_reg);
+  return -1;
 }
