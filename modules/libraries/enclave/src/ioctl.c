@@ -6,6 +6,10 @@
 
 #include "tyche_enclave_ioctl.h"
 
+#define _IN_MODULE
+#include "../include/tyche_enclave.h"
+#undef _IN_MODULE
+
 
 // —————————————————————— Global Driver Configuration ——————————————————————— //
 static char* device_name = "tyche_enclave";
@@ -15,6 +19,10 @@ static char* device_region = "tyche_enclave";
 dev_t dev = 0;
 static struct cdev tyche_cdev;
 static struct class *dev_class;
+
+// —————————————————————————————— Local State ——————————————————————————————— //
+static uint64_t tyche_ids = 0; 
+
 
 // File operation structure
 static struct file_operations fops =
@@ -26,11 +34,6 @@ static struct file_operations fops =
         .unlocked_ioctl = tyche_enclave_ioctl,
         //.release        = tyche_enclave_release,
 };
-
-
-// —————————————————————— IOCTL API Exposed by Driver ——————————————————————— //
-#define TYCHE_ENCLAVE_VALUE _IO('a', 'a') 
-
 
 // ———————————————————————————— Driver Functions ———————————————————————————— //
 
@@ -95,11 +98,39 @@ int tyche_enclave_open(struct inode *inode, struct file *file)
 
 long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+  struct tyche_encl_create_t handle;
+  struct tyche_encl_add_region_t region;
   switch(cmd)
   {
-    case TYCHE_ENCLAVE_VALUE:
-      pr_info("[TE]: Successfully invoked tyche.\n");
+    case TYCHE_ENCLAVE_DBG:
+      pr_info("[TE]: Successfully invoked TYCHE_ENCLAVE_DBG.\n");
       break;
+    case TYCHE_ENCLAVE_CREATE:
+      pr_info("[TE]: About to create a new enclave.");
+      // TODO replace this with a tyche vmcall that yields an address
+      // to a page that's map exclusively to the vm and then return an index.
+      handle.handle = tyche_ids++;
+
+      //TODO initialize some internal structure etc. to keep track of the enclave.
+      if (copy_to_user((struct tyche_encl_create_t*)arg, &handle, sizeof(handle)))
+      {
+        pr_err("[TE]: Error copying handle to user space.\n");
+      }
+      break;
+    case TYCHE_ENCLAVE_ADD_REGION:
+      pr_info("[TE]: About to add a region.\n");
+      //TODO THIS IS DANGEROUS AS IT ALLOWS TO WRITE ON A STACK VARIABLE
+      //CHANGE THIS.
+      if (copy_from_user(&region, (struct tyche_encl_add_region_t*)arg, sizeof(region)))
+      {
+        pr_err("[TE]: Error copying handle from user space.\n");
+        break;
+      }
+     
+      //TODO now we can avoid TOCTOU and should check the enclave exists and add
+      //the region.
+      break;
+
     default:
       pr_info("[TE]: Wrong command for tyche enclave driver.\n");
       break;

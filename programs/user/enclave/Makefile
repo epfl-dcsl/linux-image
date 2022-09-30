@@ -1,7 +1,10 @@
 all: enclave
 
+CURRENT_DIR=$(shell pwd)
+TYCHE_DRIVER_INCL_PATH=../../../modules/libraries/enclave/include/
+
 enclave: src/main.c
-	gcc $< -o $@
+	gcc -c -Wall -I$(TYCHE_DRIVER_INCL_PATH) $< -o $@
 
 .PHONY: clean install
 
