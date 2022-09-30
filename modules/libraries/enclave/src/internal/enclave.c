@@ -5,6 +5,7 @@
 #define PAGE 0x1000
 // ——————————————————————— Globals to track enclaves ———————————————————————— //
 static dll_list(struct enclave_t, enclaves);
+static dll_list(struct pa_region_t, pages);
 
 static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
 {
@@ -95,6 +96,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   struct region_t* prev = NULL;
   struct region_t* e_reg = NULL;
   struct region_t* reg_iter = NULL;
+  struct pa_region_t* page_iter = NULL;
   dll_foreach((&enclaves), encl, list) {
     if (encl->handle == region->handle)
       break;
@@ -138,10 +140,32 @@ int add_region(struct tyche_encl_add_region_t* region)
       break;
     }
   }
-
   //TODO get the physical mappings.
-  //TODO check it is not already mapped in the enclave.
-  //TODO generate the cr3?
+
+  //Check physical pages are not already mapped in the enclave.
+  dll_foreach((&e_reg->pas), page_iter, list) {
+    struct pa_region_t* page_iter2 = NULL;
+    struct pa_region_t* prev = NULL;
+    dll_foreach((&pages), page_iter2, globals) {
+      if (overlap(page_iter->start, page_iter->end, page_iter2->start, page_iter2->end)) {
+        pr_err("[TE]: the physical range is already used.\n");
+        goto failure_remove;
+      } 
+      if (page_iter2->end <= page_iter->start) {
+        prev = page_iter2;
+      }
+      if (page_iter2->start >= page_iter->end) {
+        break;
+      }
+    }
+    // Add the physical pages.
+    if (prev) {
+      dll_add_after((&pages), page_iter, globals, page_iter2);   
+    } else {
+      dll_add_first((&pages), page_iter, globals);
+    } 
+  } 
+  //TODO generate the cr3
   
   // Add the region to the enclave
   if (prev) {
@@ -150,6 +174,18 @@ int add_region(struct tyche_encl_add_region_t* region)
     dll_add_first((&encl->regions), e_reg, list);
   }
   return 0;
+failure_remove:
+  if (page_iter == NULL) {
+    pr_err("[TE]: page_iter should not be null here!\n");
+    goto failure;
+  }
+  // Remove whatever we had added to the global list.
+  for (page_iter = page_iter->globals.prev; page_iter != NULL;) {
+    struct pa_region_t* page_save = page_iter->globals.prev; 
+    dll_remove((&pages), page_iter, globals);
+    page_iter = page_save;
+  }
+
 failure:
   kfree(e_reg);
   return -1;

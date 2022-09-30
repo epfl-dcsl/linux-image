@@ -32,11 +32,11 @@
     }                                   \
   } while (0);
 
-#define dll_add_after(list, elem, name, prev) \
-  do {                                        \
-    (elem)->name.next = (prev)->name.next;    \
-    (elem)->name.prev = (prev);               \
-    (prev)->name.next = (elem);               \
+#define dll_add_after(list, elem, name, previous) \
+  do {                                            \
+    (elem)->name.next = (previous)->name.next;    \
+    (elem)->name.prev = (previous);               \
+    (previous)->name.next = (elem);               \
   } while (0);
 
 #define dll_add_first(list, elem, name) \
@@ -47,6 +47,22 @@
     if ((list)->tail == NULL) {         \
       (list)->tail = (elem);            \
     }                                   \
+  } while (0);
+
+#define dll_remove(list, elem, name)                    \
+  do {                                                  \
+    if ((elem)->name.prev != NULL) {                    \
+      (elem)->name.prev->name.next = (elem)->name.next; \
+    }                                                   \
+    if ((elem)->name.next != NULL) {                    \
+      (elem)->name.next->name.prev = (elem)->name.prev; \
+    }                                                   \
+    if ((list)->head == (elem)) {                       \
+      (list)->head = (elem)->name.next;                 \
+    }                                                   \
+    if ((list)->tail == (elem)) {                       \
+      (list)->tail = (elem)->name.prev;                 \
+    }                                                   \
   } while (0);
 
 #endif

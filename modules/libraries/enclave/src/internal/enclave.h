@@ -11,7 +11,7 @@
 // ——————————————————————————— Type Declarations ———————————————————————————— //
 
 // Forward declarations.
-struct page_t;
+struct pa_region_t;
 struct region_t;
 
 /// Describes a contiguous region to allocate to an enclave.
@@ -32,14 +32,16 @@ struct region_t {
   enum tyche_encl_mapping_t tpe;
 
   /// List of corresponding physical pages.
-  dll_list(struct page_elem_t, pas);
+  dll_list(struct pa_region_t, pas);
 };
 
 /// Describes physical memory regions.
-struct page_t {
-  dll_elem(struct page_t, list);
+struct pa_region_t {
+  dll_elem(struct pa_region_t, list);
+  dll_elem(struct pa_region_t, globals);
   uint64_t start;
   uint64_t end;
+  enum tyche_encl_mapping_t tpe;
 };
 
 /// Describes an enclave.
@@ -53,7 +55,7 @@ struct enclave_t {
   dll_list(struct region_t, regions);
 
   /// List of pages used by page tables.
-  dll_list(struct page_t, pts);
+  dll_list(struct pa_region_t, pts);
 };
 
 // —————————————————————————————— Enclave API ——————————————————————————————— //
