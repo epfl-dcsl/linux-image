@@ -46,6 +46,8 @@ struct pa_region_t {
 
 /// Describes an enclave.
 struct enclave_t {
+  /// The pid of the task that created this enclave.
+  pid_t pid;
   /// Enclaves belong to a list.
   dll_elem(struct enclave_t, list);
   /// Unique enclave identifier

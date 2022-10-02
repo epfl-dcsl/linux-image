@@ -1,6 +1,8 @@
 #include <linux/types.h>
+#include <linux/sched.h>
 #include <linux/slab.h>
 #include "enclave.h"
+#include "process.h"
 
 #define PAGE 0x1000
 // ——————————————————————— Globals to track enclaves ———————————————————————— //
@@ -14,6 +16,7 @@ static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
 
 static int overlap(uint64_t s1, uint64_t e1, uint64_t s2, uint64_t e2)
 {
+  pr_info("[TE]: In overlap\n");
   if ((s1 <= s2) && (s2 <= e1)) {
     return 1;
   }
@@ -83,7 +86,11 @@ int add_enclave(tyche_encl_handle_t handle)
   }
 
   // Setup the handle.
+  encl->pid = current->pid;
   encl->handle = handle;
+  dll_init_list(&encl->regions);
+  dll_init_list(&encl->pts);
+  dll_init_elem(encl, list);
   // Add to the new enclave to the list.
   dll_add((&enclaves), encl, list);
   return 0;
@@ -105,6 +112,11 @@ int add_region(struct tyche_encl_add_region_t* region)
   if (!encl) {
     return -1;
   }
+  // Check that the task calling is the one that created the enclave.
+  if (encl->pid != current->pid) {
+    pr_err("[TE]: Attempt to add a page to an enclave from a different task!\n");
+    return -1;
+  }
  
   // Lightweight checks.
   // Mappings to physical memory are checked later.
@@ -116,7 +128,7 @@ int add_region(struct tyche_encl_add_region_t* region)
 
   // Allocate the region & set its attributes.
   e_reg = kmalloc(sizeof(struct region_t), GFP_KERNEL);
-  if (e_reg) {
+  if (!e_reg) {
     pr_err("[TE]: Failed to allocate a new region.\n");
     return -1;
   }
@@ -124,9 +136,11 @@ int add_region(struct tyche_encl_add_region_t* region)
   e_reg->end = region->end;
   e_reg->flags = region->flags;
   e_reg->tpe = region->tpe;
+  dll_init_list(&e_reg->pas);
+  dll_init_elem(e_reg, list); 
 
   // Check that the full region is mapped and collect the relevant pages. 
-  //TODO check it's mapped.
+  inspect_region(e_reg); 
 
   // Check there is no overlap with other regions.
   dll_foreach((&encl->regions), reg_iter, list) {
@@ -141,11 +155,13 @@ int add_region(struct tyche_encl_add_region_t* region)
     }
   }
   //TODO get the physical mappings.
+  pr_info("[TE]: No overlap detected\n");
 
   //Check physical pages are not already mapped in the enclave.
   dll_foreach((&e_reg->pas), page_iter, list) {
     struct pa_region_t* page_iter2 = NULL;
     struct pa_region_t* prev = NULL;
+    pr_info("[TE]: Begin foreach\n");
     dll_foreach((&pages), page_iter2, globals) {
       if (overlap(page_iter->start, page_iter->end, page_iter2->start, page_iter2->end)) {
         pr_err("[TE]: the physical range is already used.\n");
@@ -165,6 +181,7 @@ int add_region(struct tyche_encl_add_region_t* region)
       dll_add_first((&pages), page_iter, globals);
     } 
   } 
+  pr_info("[TE]: No physical page overlap detected\n");
   //TODO generate the cr3
   
   // Add the region to the enclave

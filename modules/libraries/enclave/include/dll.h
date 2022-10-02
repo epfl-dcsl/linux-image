@@ -17,6 +17,12 @@
   (list)->head = NULL;      \
   (list)->tail = NULL;
 
+#define dll_init_elem(elem, name) \
+  do {                            \
+    (elem)->name.prev = NULL;     \
+    (elem)->name.next = NULL;     \
+  } while (0);
+
 #define dll_foreach(list, curr, name) \
   for (curr = (list)->head; (curr) != NULL; (curr) = (curr)->name.next)
 

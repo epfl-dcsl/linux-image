@@ -136,8 +136,8 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         return -1;
       }
      
-      //TODO now we can avoid TOCTOU and should check the enclave exists and add
-      //the region.
+      // The region is now safe against TOCTOU.
+      add_region(&region);
       break;
 
     default:

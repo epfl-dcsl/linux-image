@@ -34,8 +34,8 @@ int main(void)
   printf("Add a page \n");
   struct tyche_encl_add_region_t region = {
     .handle = enclave.handle,
-    .start = 0xdeadbeef,
-    .end = 0xdeadbabe,
+    .start = 0x1000,
+    .end = 0x2000,
     .flags = TE_READ | TE_USER | TE_WRITE,
     .tpe = Confidential,
   };

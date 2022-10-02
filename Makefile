@@ -5,7 +5,7 @@ linux-embedded:
 	./scripts/build.sh
 
 
-run-linux-embedded:
+run-linux-embedded: linux-embedded
 	qemu-system-x86_64 \
     -kernel images/bzImage \
     -nographic -append "earlyprintk=serial,ttyS0 console=ttyS0" \
