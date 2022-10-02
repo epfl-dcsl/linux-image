@@ -21,4 +21,7 @@ Welcome to Tyche
 
 
 !
+cd home/tyche/drivers/
+sh tyche_enclave.sh
+cd ..
 exec /bin/sh

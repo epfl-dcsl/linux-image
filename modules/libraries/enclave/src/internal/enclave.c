@@ -16,7 +16,6 @@ static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
 
 static int overlap(uint64_t s1, uint64_t e1, uint64_t s2, uint64_t e2)
 {
-  pr_info("[TE]: In overlap\n");
   if ((s1 <= s2) && (s2 <= e1)) {
     return 1;
   }
@@ -140,7 +139,10 @@ int add_region(struct tyche_encl_add_region_t* region)
   dll_init_elem(e_reg, list); 
 
   // Check that the full region is mapped and collect the relevant pages. 
-  inspect_region(e_reg); 
+  if (inspect_region(e_reg) != 0) {
+    pr_err("[TE]: Invalid memory region.\n");
+    goto failure;
+  }
 
   // Check there is no overlap with other regions.
   dll_foreach((&encl->regions), reg_iter, list) {
@@ -155,7 +157,6 @@ int add_region(struct tyche_encl_add_region_t* region)
     }
   }
   //TODO get the physical mappings.
-  pr_info("[TE]: No overlap detected\n");
 
   //Check physical pages are not already mapped in the enclave.
   dll_foreach((&e_reg->pas), page_iter, list) {
@@ -181,7 +182,6 @@ int add_region(struct tyche_encl_add_region_t* region)
       dll_add_first((&pages), page_iter, globals);
     } 
   } 
-  pr_info("[TE]: No physical page overlap detected\n");
   //TODO generate the cr3
   
   // Add the region to the enclave

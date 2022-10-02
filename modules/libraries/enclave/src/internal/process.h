@@ -3,6 +3,6 @@
 
 #include "enclave.h"
 
-void inspect_region(struct region_t* region);
+int inspect_region(struct region_t* region);
 
 #endif
