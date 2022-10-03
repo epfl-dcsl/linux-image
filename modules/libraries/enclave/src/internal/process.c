@@ -20,7 +20,7 @@ static int pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
   struct pa_region_t* pa_region = NULL;
   uint64_t phys_addr = 0;
   struct walker_info_t* info = (struct walker_info_t*)(walk->private);
-  printk(KERN_NOTICE "[TE]: In a pte entry! %lx -- %lx\n", addr, pte->pte);
+  //printk(KERN_NOTICE "[TE]: In a pte entry! %lx -- %lx\n", addr, pte->pte);
 
   // Safety checks.
   if (info == NULL || info->region == NULL) {
@@ -72,7 +72,9 @@ static int hugetlb_entry(pte_t *pte, unsigned long hmask,
 }
 
 static int pte_hole(unsigned long addr, unsigned long next, int depth, struct mm_walk *walk) {
-  printk(KERN_NOTICE "[TE]: Missing PTE in the range!\n");
+  struct walker_info_t* info = (struct walker_info_t*)(walk->private);
+  pr_err("[TE]: Missing PTE in the range!\n");
+  info->success = 0;
   return -1;
 }
 

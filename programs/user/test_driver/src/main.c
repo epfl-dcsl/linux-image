@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,60 +9,104 @@
 #include<sys/ioctl.h>
 #include <sys/mman.h>
 
-//TODO put the library somewhere else, modify makefile to include it in the path.
 #include "tyche_enclave.h"
 
-int main(void)
+#define LOG(msg) printf("%s: %s\n", __func__, msg);
+
+#define TEST(cond, msg) if (!(cond)) {fprintf(stderr, "%s:%d @%s : %s\n", __FILE__, __LINE__, __func__, msg); abort();}
+
+
+int test_open()
 {
-  int fd;
-  printf("Testing tyche enclave ioctl driver\n");
-  printf("Opening driver.\n");
-  fd = open("/dev/tyche_enclave", O_RDWR);
-  if (fd < 0)
-  {
-    printf("Cannot open device file...\n");
-    return 0;
-  }
-  printf("Invoke ioctl!\n");
-  ioctl(fd, TYCHE_ENCLAVE_DBG);
+  LOG("Opening driver.\n");
+  int fd = open("/dev/tyche_enclave", O_RDWR);
+  TEST(fd >= 0, "Cannot open device driver.");
+  return fd; 
+}
 
-  printf("Create an enclave\n");
-  struct tyche_encl_create_t enclave;
-  ioctl(fd, TYCHE_ENCLAVE_CREATE, &enclave);
-  printf("Received handle %ld\n", enclave.handle);
-  ioctl(fd, TYCHE_ENCLAVE_CREATE, &enclave);
-  printf("Second handle %ld\n", enclave.handle);
+void test_create_enclave(int fd, struct tyche_encl_create_t* h) {
+  LOG("Create an enclave");
+  TEST(ioctl(fd, TYCHE_ENCLAVE_CREATE, h) == 0, "Unable to create and enclave");
+}
 
-  printf("Add a page \n");
+void test_ioctl_dbg(int fd) {
+  LOG("Invoke ioctl dbg");
+  TEST(ioctl(fd, TYCHE_ENCLAVE_DBG) == 0, "DBG ioctl does not work"); 
+}
+
+void test_add_invalid_range(int fd, tyche_encl_handle_t* h) {
+  LOG("Adding an invalid page.");
   struct tyche_encl_add_region_t region = {
-    .handle = enclave.handle,
+    .handle = *h,
     .start = 0x1000,
     .end = 0x2000,
     .flags = TE_READ | TE_USER | TE_WRITE,
     .tpe = Confidential,
   };
-  if (ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region) == -1) {
-    printf("Error mapping a random page.\n"); 
-  }
+  int value = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region);
+  TEST(value == -1, "Invalid page accepted.");
+}
 
-  // Try mapping a valid page.
-  int* ptr = (int*) mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0); 
-  if (ptr == MAP_FAILED) {
-    printf("Unabel to mmap!\n");
-    goto done;
-  }
-  // Make sure we can write/populate the region.
-  *ptr = 10;
-  region.start = ((uint64_t) (&region)) - ((uint64_t)(&region) % 0x1000);
-  region.end = region.start + 0x1000;
-  if (ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region) == -1) {
-    printf("Second call to add page failed, it should not have.\n");
-    goto done;
-  }
-  printf("Success mapping a region\n");
+void test_add_valid_range(int fd, tyche_encl_handle_t* h)
+{
+  LOG("Add Valid Range");
+  // Try mapping a valid range.
+  size_t size = 3 * 0x1000;
+  void* ptr =  mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0); 
+  TEST(ptr != MAP_FAILED, "Mmap failed!");
+  uint64_t start = (uint64_t) ptr;
+   struct tyche_encl_add_region_t region = {
+    .handle = *h,
+    .start = start,
+    .end = start + size,
+    .flags = TE_READ | TE_USER | TE_WRITE,
+    .tpe = Confidential,
+  };
+  int value  = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region); 
+  TEST(value == 0, "Valid page rejected.");
+  TEST(munmap(ptr, size) == 0, "Munmap failed");
+}
+
+void test_add_invalid_overlap(int fd, tyche_encl_handle_t* h) {
+  LOG("Invalid overlap");
+  size_t size = 10 * 0x1000;
+  void* ptr =  mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0); 
+  TEST(ptr != MAP_FAILED, "Mmap failed!");
+  uint64_t start = (uint64_t) ptr;
+   struct tyche_encl_add_region_t region = {
+    .handle = *h,
+    .start = start,
+    .end = start + size,
+    .flags = TE_READ | TE_USER | TE_WRITE,
+    .tpe = Confidential,
+  };
+  int value = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region); 
+  TEST(value == 0, "Valid range rejected");
+  
+  // Now try to map an invalid range with an overlap.
+  region.start = start + 0x1000;
+  region.end = start + 0x1000;
+  value = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region);
+  TEST(value == -1, "Overlap accepted.");
+}
+
+int main(void)
+{
+  LOG("Testing tyche enclave ioctl driver");
+  int fd = test_open();
+  
+  test_ioctl_dbg(fd);
+  struct tyche_encl_create_t h1, h2;
+  test_create_enclave(fd, &h1);
+  test_create_enclave(fd, &h2);
+  TEST(h1.handle != h2.handle, "Did not get a fresh handle!");
+
+  test_add_invalid_range(fd, &(h1.handle));
+  test_add_valid_range(fd, &(h1.handle));
+  test_add_invalid_overlap(fd, &(h1.handle));
 
 done:
-  printf("All done!\n");
+  LOG("All done!");
   close(fd);
   return 0;
 }

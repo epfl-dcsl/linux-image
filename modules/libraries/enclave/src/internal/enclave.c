@@ -119,6 +119,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   }
   // We could not find the enclave.
   if (!encl) {
+    pr_err("[TE]: Enclave not found in add_region.\n");
     return -1;
   }
   // Check that the task calling is the one that created the enclave.
@@ -152,6 +153,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   // TODO Should we merge here?
   dll_foreach((&encl->regions), reg_iter, list) {
     if (overlap(reg_iter->start, reg_iter->end, e_reg->start, e_reg->end)) {
+      pr_err("[TE]: Virtual address overlap detected.\n");
       goto failure;
     } 
     if (reg_iter->end <= e_reg->start) {
@@ -199,6 +201,7 @@ failure_undo:
   delete_region_pas(e_reg);
 failure:
   kfree(e_reg);
+  pr_err("[TE]: add_region failure.\n");
   return -1;
 }
 

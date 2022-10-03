@@ -112,7 +112,6 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       pr_info("[TE]: Successfully invoked TYCHE_ENCLAVE_DBG.\n");
       break;
     case TYCHE_ENCLAVE_CREATE:
-      pr_info("[TE]: About to create a new enclave.");
       // TODO replace this with a tyche vmcall that yields an address
       // to a page that's map exclusively to the vm and then return an index.
       handle.handle = tyche_ids++;
@@ -131,7 +130,6 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       }
       break;
     case TYCHE_ENCLAVE_ADD_REGION:
-      pr_info("[TE]: About to add a region.\n");
       //TODO THIS IS DANGEROUS AS IT ALLOWS TO WRITE ON A STACK VARIABLE
       //CHANGE THIS.
       if (copy_from_user(&region, (struct tyche_encl_add_region_t*)arg, sizeof(region)))
@@ -142,12 +140,13 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
      
       // The region is now safe against TOCTOU.
       if (add_region(&region) == -1) {
+        pr_err("[TE]: Failed to add region.\n");
         return -1;
       }
       break;
 
     default:
-      pr_info("[TE]: Wrong command for tyche enclave driver.\n");
+      pr_err("[TE]: Wrong command for tyche enclave driver.\n");
       return -1;
       break;
   }
