@@ -119,5 +119,5 @@ int walk_and_collect_region(struct region_t* region) {
   struct walker_info_t info = {region, 1};
 
   walk_page_range_prox(current->mm, region->start, region->end, &ops, &info); 
-  return 0;
+  return !(info.success);
 }

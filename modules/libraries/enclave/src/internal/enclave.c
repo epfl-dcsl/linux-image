@@ -7,7 +7,6 @@
 #define PAGE 0x1000
 // ——————————————————————— Globals to track enclaves ———————————————————————— //
 static dll_list(struct enclave_t, enclaves);
-static dll_list(struct pa_region_t, pages);
 
 static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
 {
@@ -96,6 +95,17 @@ int add_enclave(tyche_encl_handle_t handle)
   return 0;
 }
 
+/// Deletes all the physical regions in a region.
+static void delete_region_pas(struct region_t* region)
+{
+  struct pa_region_t* curr = NULL;
+  for (curr = region->pas.head; curr != NULL;) {
+    struct pa_region_t* tmp = curr->list.next;
+    kfree(curr);
+    curr = tmp;
+  }
+}
+
 /// Add a region to an existing enclave.
 int add_region(struct tyche_encl_add_region_t* region)
 {
@@ -103,7 +113,6 @@ int add_region(struct tyche_encl_add_region_t* region)
   struct region_t* prev = NULL;
   struct region_t* e_reg = NULL;
   struct region_t* reg_iter = NULL;
-  struct pa_region_t* page_iter = NULL;
   dll_foreach((&enclaves), encl, list) {
     if (encl->handle == region->handle)
       break;
@@ -140,6 +149,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   dll_init_elem(e_reg, list); 
 
   // Check there is no overlap with other regions.
+  // TODO Should we merge here?
   dll_foreach((&encl->regions), reg_iter, list) {
     if (overlap(reg_iter->start, reg_iter->end, e_reg->start, e_reg->end)) {
       goto failure;
@@ -158,29 +168,23 @@ int add_region(struct tyche_encl_add_region_t* region)
     goto failure;
   }
 
-  //Check physical pages are not already mapped in the enclave.
-  dll_foreach((&e_reg->pas), page_iter, list) {
-    struct pa_region_t* page_iter2 = NULL;
-    struct pa_region_t* prev = NULL;
-    dll_foreach((&pages), page_iter2, globals) {
-      if (overlap(page_iter->start, page_iter->end, page_iter2->start, page_iter2->end)) {
-        pr_err("[TE]: the physical range is already used.\n");
-        goto failure_remove;
-      } 
-      if (page_iter2->end <= page_iter->start) {
-        prev = page_iter2;
-      }
-      if (page_iter2->start >= page_iter->end) {
-        break;
-      }
+  //Check physical pages are not already mapped in the enclave with different types.
+  reg_iter = NULL;
+  dll_foreach(&encl->regions, reg_iter, list) {
+    struct pa_region_t* e_pa = NULL;
+    if (reg_iter == e_reg) {
+      continue;
     }
-    // Add the physical pages.
-    if (prev) {
-      dll_add_after((&pages), page_iter, globals, page_iter2);   
-    } else {
-      dll_add_first((&pages), page_iter, globals);
+    dll_foreach(&e_reg->pas, e_pa, list) {
+      struct pa_region_t* o_pa = NULL;
+      dll_foreach(&reg_iter->pas, o_pa, list) {
+        if (o_pa->tpe != e_pa->tpe && overlap(o_pa->start, o_pa->end, e_pa->start, e_pa->end)) {
+          pr_err("[TE]: The supplied region has overlaps in the physical domain with different tpes.\n");
+          goto failure_undo;
+        }
+      }
     } 
-  } 
+  }
   //TODO generate the cr3
   
   // Add the region to the enclave
@@ -190,18 +194,9 @@ int add_region(struct tyche_encl_add_region_t* region)
     dll_add_first((&encl->regions), e_reg, list);
   }
   return 0;
-failure_remove:
-  if (page_iter == NULL) {
-    pr_err("[TE]: page_iter should not be null here!\n");
-    goto failure;
-  }
-  // Remove whatever we had added to the global list.
-  for (page_iter = page_iter->globals.prev; page_iter != NULL;) {
-    struct pa_region_t* page_save = page_iter->globals.prev; 
-    dll_remove((&pages), page_iter, globals);
-    page_iter = page_save;
-  }
-
+failure_undo:
+  // Free all resources allocated to e_reg;
+  delete_region_pas(e_reg);
 failure:
   kfree(e_reg);
   return -1;
@@ -210,6 +205,8 @@ failure:
 /// Adds a physical range to an enclave region.
 /// This function keeps the list of region.pas sorted and attempts to merge
 /// pas whenever possible. As a result, the pa_region might get freed and nullify. 
+/// @COMMENT: The checks on the tpe are useless for now (as the tpe are always supposed to be the same).
+/// I keep them just in case I manage to make this function reusable for other lists.
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
   struct pa_region_t* prev = NULL;
   struct pa_region_t* curr = NULL;
