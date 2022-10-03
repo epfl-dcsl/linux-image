@@ -14,13 +14,14 @@ static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
   return first == second;
 }
 
+//If end == start, we do not consider it as an overlap.
 static int overlap(uint64_t s1, uint64_t e1, uint64_t s2, uint64_t e2)
 {
-  if ((s1 <= s2) && (s2 <= e1)) {
+  if ((s1 <= s2) && (s2 < e1)) {
     return 1;
   }
 
-  if ((s2 <= s1) && (s1 <= e2)) {
+  if ((s2 <= s1) && (s1 < e2)) {
     return 1;
   }
   return 0;
@@ -138,12 +139,6 @@ int add_region(struct tyche_encl_add_region_t* region)
   dll_init_list(&e_reg->pas);
   dll_init_elem(e_reg, list); 
 
-  // Check that the full region is mapped and collect the relevant pages. 
-  if (inspect_region(e_reg) != 0) {
-    pr_err("[TE]: Invalid memory region.\n");
-    goto failure;
-  }
-
   // Check there is no overlap with other regions.
   dll_foreach((&encl->regions), reg_iter, list) {
     if (overlap(reg_iter->start, reg_iter->end, e_reg->start, e_reg->end)) {
@@ -156,13 +151,17 @@ int add_region(struct tyche_encl_add_region_t* region)
       break;
     }
   }
-  //TODO get the physical mappings.
+
+  // Check that the full region is mapped and collect the relevant physical pages. 
+  if (walk_and_collect_region(e_reg) != 0) {
+    pr_err("[TE]: Invalid memory region.\n");
+    goto failure;
+  }
 
   //Check physical pages are not already mapped in the enclave.
   dll_foreach((&e_reg->pas), page_iter, list) {
     struct pa_region_t* page_iter2 = NULL;
     struct pa_region_t* prev = NULL;
-    pr_info("[TE]: Begin foreach\n");
     dll_foreach((&pages), page_iter2, globals) {
       if (overlap(page_iter->start, page_iter->end, page_iter2->start, page_iter2->end)) {
         pr_err("[TE]: the physical range is already used.\n");
@@ -206,4 +205,84 @@ failure_remove:
 failure:
   kfree(e_reg);
   return -1;
+}
+
+/// Adds a physical range to an enclave region.
+/// This function keeps the list of region.pas sorted and attempts to merge
+/// pas whenever possible. As a result, the pa_region might get freed and nullify. 
+int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
+  struct pa_region_t* prev = NULL;
+  struct pa_region_t* curr = NULL;
+  
+  // Easy case, the list is empty.
+  if (dll_is_empty(&region->pas)) {
+    dll_add(&region->pas, *pa_region, list); 
+    return 0;
+  }
+
+  // Attempt to find a position in the list, handle merges
+  for(curr = region->pas.head; curr != NULL;) {
+    // Safety check first.
+    if (overlap(curr->start, curr->end, (*pa_region)->start, (*pa_region)->end)) {
+      return -1;
+    }
+
+    // CASES WHERE: pa_region is on the left.
+
+    // Too far in the list already.
+    if (curr->start > (*pa_region)->end ||
+        (curr->start == (*pa_region)->end && curr->tpe != (*pa_region)->tpe)) {
+      prev = curr;
+      break;
+    }
+    
+    // Contiguous, we are about to have some merging to do.
+    if (curr->start == (*pa_region)->end && curr->tpe == (*pa_region)->tpe) {
+      curr->start = (*pa_region)->start;
+      kfree(*pa_region);
+      *pa_region = NULL;
+      break;
+    }
+
+    // CASES WHERE: pa_region is on the right
+
+    // Safely skip.
+    if (curr->end < (*pa_region)->start ||
+      (curr->end == (*pa_region)->start && curr->tpe != (*pa_region)->tpe)) {
+      goto next;
+    }
+
+    // We need to merge, but have no guarantee that the next region does not
+    // overlap.
+    // TODO maybe go through the list twice, once to check for overlaps,
+    // and once to add the element?
+    if (curr->end == (*pa_region)->start && curr->tpe == (*pa_region)->tpe) {
+      (*pa_region)->start = curr->start;
+      dll_remove(&region->pas, curr, list);
+      kfree(curr);
+      curr = prev;
+      if (prev != NULL) {
+        prev = curr->list.prev;
+      } else {
+        curr = region->pas.head; 
+        continue;
+      }
+    } 
+
+next:
+    prev = curr;
+    curr = curr->list.next;
+  }
+  // The region has been merged.
+  if (*pa_region == NULL) {
+    goto done;
+  }
+  if (prev != NULL) {
+    dll_add_after(&region->pas, *pa_region, list, prev); 
+  }
+  if (prev == NULL) {
+    dll_add_first(&region->pas, *pa_region, list);
+  }
+done: 
+  return 0;
 }

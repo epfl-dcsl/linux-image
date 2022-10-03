@@ -4,6 +4,7 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 
+#include "internal/process.h"
 #include "tyche_enclave_ioctl.h"
 
 #define _IN_MODULE
@@ -72,6 +73,9 @@ int tyche_enclave_register(void)
   }
   pr_info("[TE]: Device Driver Insert Done!\n");
   enclave_init();
+  if (init_page_walker()) {
+    goto r_device; 
+  }
   return 0; 
 
 r_device:

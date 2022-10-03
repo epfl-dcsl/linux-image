@@ -23,6 +23,9 @@ install: all
 	mkdir -p $(INSTALL_PATH)
 	cp $(TARGET_MODULE).ko $(INSTALL_PATH) 
 	cp $(TARGET_MODULE).sh $(INSTALL_PATH)
+	cp $(TARGET_MODULE).mod $(INSTALL_PATH)
+	cp Module.symvers $(INSTALL_PATH)
+	cp modules.order $(INSTALL_PATH)
 
 clean:
 # run kernel build system to cleanup in current directory

@@ -23,6 +23,9 @@
     (elem)->name.next = NULL;     \
   } while (0);
 
+#define dll_is_empty(list) \
+  ((list)->head == NULL && (list)->tail == NULL)
+
 #define dll_foreach(list, curr, name) \
   for (curr = (list)->head; (curr) != NULL; (curr) = (curr)->name.next)
 
