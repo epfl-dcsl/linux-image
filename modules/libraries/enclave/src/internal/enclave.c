@@ -17,13 +17,16 @@ static int compare_encl(tyche_encl_handle_t first, tyche_encl_handle_t second)
 static int overlap(uint64_t s1, uint64_t e1, uint64_t s2, uint64_t e2)
 {
   if ((s1 <= s2) && (s2 < e1)) {
-    return 1;
+    goto fail;
   }
 
   if ((s2 <= s1) && (s1 < e2)) {
-    return 1;
+    goto fail;
   }
   return 0;
+fail:
+  printk(KERN_NOTICE "[TE]: 1: %llx - %llx ; 2: %llx - %llx\n", s1, e1, s2, e2);
+  return 1;
 }
 
 static int region_check(struct tyche_encl_add_region_t* region)
@@ -195,6 +198,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   } else {
     dll_add_first((&encl->regions), e_reg, list);
   }
+  printk(KERN_NOTICE "[TE]: %llx received region %llx - %llx\n", encl->handle, e_reg->start, e_reg->end);
   return 0;
 failure_undo:
   // Free all resources allocated to e_reg;

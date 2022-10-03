@@ -11,7 +11,7 @@
 
 #include "tyche_enclave.h"
 
-#define LOG(msg) printf("%s: %s\n", __func__, msg);
+#define LOG(...)  do {printf("%s:", __func__); printf(__VA_ARGS__); printf("\n");}while(0);
 
 #define TEST(cond, msg) if (!(cond)) {fprintf(stderr, "%s:%d @%s : %s\n", __FILE__, __LINE__, __func__, msg); abort();}
 
@@ -64,7 +64,6 @@ void test_add_valid_range(int fd, tyche_encl_handle_t* h)
   };
   int value  = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region); 
   TEST(value == 0, "Valid page rejected.");
-  TEST(munmap(ptr, size) == 0, "Munmap failed");
 }
 
 void test_add_invalid_overlap(int fd, tyche_encl_handle_t* h) {
@@ -85,7 +84,7 @@ void test_add_invalid_overlap(int fd, tyche_encl_handle_t* h) {
   
   // Now try to map an invalid range with an overlap.
   region.start = start + 0x1000;
-  region.end = start + 0x1000;
+  region.end = start + 0x2000;
   value = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region);
   TEST(value == -1, "Overlap accepted.");
 }
