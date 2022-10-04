@@ -1,9 +1,12 @@
-all: elf64.so
+all: libelf64.so test_elf64
 
-elf64.so: src/lib.c
-	gcc -shared -Iinclude/ -o $@ -fPIC $< 
+libelf64.so: src/lib.c include/common.h include/elf64.h
+	gcc -g -shared -Iinclude/ -o $@ -fPIC src/lib.c 
+
+test_elf64: tests/test.c libelf64.so
+	gcc -g -Iinclude/ -Wl,-R . -L. tests/test.c -o $@ -lelf64
 
 .PHONY: clean
 
 clean:
-	rm elf64.so
+	rm libelf64.so test_elf64

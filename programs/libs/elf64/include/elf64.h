@@ -31,4 +31,10 @@ Elf64_Sym* find_symbol_in_section(int fd, char* symbol, Elf64_Ehdr eh, Elf64_Shd
 /// Returns NULL if symbol not found.
 /// Result is freeable.
 Elf64_Sym* find_symbol(int fd, char* symbol, Elf64_Ehdr eh, Elf64_Shdr sections[]);
+
+/// Prints all the sections.
+void print_elf64_sheaders(int fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[]);
+
+/// Prints a single section.
+void print_elf64_section(int fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[], int i, int header);
 #endif

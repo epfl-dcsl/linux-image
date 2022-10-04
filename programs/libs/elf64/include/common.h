@@ -11,4 +11,11 @@
     }                                                                \
   } while (0);
 
+#define LOG(...)                                          \
+  do {                                                    \
+    printf("[%s:%d] %s: ", __FILE__, __LINE__, __func__); \
+    printf(__VA_ARGS__);                                  \
+    printf("\n");                                         \
+  } while (0);
+
 #endif
