@@ -1,6 +1,28 @@
 #ifndef __INCLUDE_PTS_API_H__
 #define __INCLUDE_PTS_API_H__
 
+// ——————————————————————————————— Debugging ———————————————————————————————— //
+#ifdef DEBUG_USER_SPACE
+#include <stdio.h>
+
+#define TEST(cond)                                                   \
+  do {                                                               \
+    if (!(cond)) {                                                   \
+      fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, __func__); \
+      abort();                                                       \
+    }                                                                \
+  } while (0);
+#else
+#define TEST(cond) \
+  do {             \
+    if (!(cond)) { \
+      return -1;   \
+    }              \
+  } while (0);
+#endif
+
+// —————————————————————————————————— API ——————————————————————————————————— //
+
 #define MAX_LEVEL 5
 
 /// Cover the address with a typedef in case we need to change that.
@@ -44,14 +66,13 @@ typedef entry_t (*allocator_t)(void*);
 /// Translates an addr_t (i.e., PA -> VA, VA -> PA).
 typedef addr_t (*translator_t)(addr_t);
 
-/// Computes the subrange we are about to visit.
-/// prev_start, prev_end, curr_level, curr_index, new_start, new_end.
-typedef void (*subrange_t)(addr_t, addr_t, level_t, index_t, addr_t*, addr_t*);
-
 /// A profile for a page table.
 typedef struct pt_profile_t {
   // Number of levels in the page table.
   level_t nb_levels;
+
+  // Number of entries per level.
+  index_t nb_entries;
 
   // CallBacks for each level when entry is present.
   callback_t visitors[MAX_LEVEL];
@@ -59,11 +80,14 @@ typedef struct pt_profile_t {
   // Callbacks for each level when entry is absent.
   callback_t mappers[MAX_LEVEL];
 
+  // Mask for each level.
+  addr_t masks[MAX_LEVEL];
+
+  // Shift for each level.
+  addr_t shifts[MAX_LEVEL];
+
   // Determines whether the node should be visited by a mapper or a walker.
   callback_t how;
-
-  // From a VA to an index in a given level.
-  get_index_t get_index;
 
   // From one level entry to the lower level.
   next_level_t next;
@@ -76,9 +100,6 @@ typedef struct pt_profile_t {
 
   // Translate from VA to PA.
   translator_t va_to_pa;
-
-  // Find subrange
-  subrange_t subrange;
 
 } pt_profile_t;
 

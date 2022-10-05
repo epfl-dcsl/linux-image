@@ -1,40 +1,31 @@
 #include "pts_api.h"
 
-#ifdef DEBUG_USER_SPACE
-#include <stdio.h>
-
-#define TEST(cond)                                                   \
-  do {                                                               \
-    if (!(cond)) {                                                   \
-      fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, __func__); \
-      abort();                                                       \
-    }                                                                \
-  } while (0);
-#else
-#define TEST(cond)  \
-  do {              \
-    if (!(cond)) {  \
-      return -1;    \
-    }               \
-  } while(0);
-#endif
+/// From a VA addr and a level, get the current index.
+static index_t get_index(addr_t addr, level_t level, pt_profile_t* profile)
+{
+  return ((addr & profile->masks[level]) >> profile->shifts[level]);
+}
 
 int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_profile_t* profile)
 {
   TEST(start < end); 
   TEST(profile != 0);
-  //TEST(root != 0);
   TEST(level < profile->nb_levels); 
   TEST(profile->how != 0);
-  TEST(profile->get_index != 0);
   TEST(profile->pa_to_va != 0);
-  TEST(profile->subrange != 0);
   entry_t next = 0;
-  addr_t sub_start = 0, sub_end = 0;
-  index_t s = profile->get_index(start, level);
-  index_t e = profile->get_index(end, level);
+  addr_t curr_va = start;
+  index_t s = get_index(start, level, profile);
   entry_t* va_root = (entry_t*) profile->pa_to_va(root);
-  for (index_t i = s; i < e; i++) {
+  for (index_t i = s; i < profile->nb_entries; i++) {
+    // Compute the current virtual address.
+    curr_va = (start & ~(profile->masks[level])) 
+        | (((addr_t)i) << profile->shifts[level]);
+
+    // If the current address is greater or equal to the end, stop.
+    if (curr_va >= end) {
+      break;
+    }
     // Decide what to do first.
     // We can either MAP -> WALK -> VISIT
     switch(profile->how(va_root[i], level, profile)) {
@@ -95,9 +86,9 @@ walk:
     if (level == 0) {
       continue;
     } 
+    // Next level page table (PA) to visit.
     next = profile->next(va_root[i], level);
-    profile->subrange(start, end, level, i, &sub_start, &sub_end); 
-    if (walk_page_range(next, level-1, sub_start, sub_end, profile) == -1) {
+    if (walk_page_range(next, level-1, curr_va, end, profile) == -1) {
       TEST(0);
       return -1; 
     }

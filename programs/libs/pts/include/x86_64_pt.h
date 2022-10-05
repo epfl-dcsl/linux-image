@@ -3,63 +3,52 @@
 
 #include "pts_api.h"
 
+#define x86_64_LEVELS 4
+
 // ————————————————————————————— Compatibility —————————————————————————————— //
 #define _AT(T, X) ((T)(X))
 #define __AC(X, Y) (X##Y)
 #define _AC(X, Y) __AC(X, Y)
-#typedef entry_t pteval_t;
+typedef entry_t pteval_t;
 
-// Copied from linux/arch/x86/include/asm/pgtable_types.h
-// Add whatever yoou might need.
 // ——————————————————————————— Page Configuration ——————————————————————————— //
 /* PAGE_SHIFT determines the page size */
+
+#define VIRTUAL_MASK_SHIFT 47
+#define VIRTUAL_MASK ((1UL << VIRTUAL_MASK_SHIFT) - 1)
+
+#define PHYSICAL_MASK_SHIFT 52
+#define PHYSICAL_MASK ((1UL << PHYSICAL_MASK_SHIFT) - 1)
 #define PAGE_SHIFT 12
 #define PAGE_SIZE (_AC(1, UL) << PAGE_SHIFT)
-#define PAGE_MASK (~(PAGE_SIZE - 1))
+#define PAGE_MASK (~(PAGE_SIZE - 1) & VIRTUAL_MASK)
 
-/*
- * PGDIR_SHIFT determines what a top-level page table entry can map
- */
-#define PGDIR_SHIFT 39
+#define PML4_SHIFT 39
+#define PTRS_PER_PML4 512
+#define PML4_PAGE_SIZE (__AC(1, UL) << PML4_SHIFT)
+#define PML4_PAGE_MASK (~(PML4_PAGE_SIZE - 1) & VIRTUAL_MASK)
+
+#define PGD_SHIFT 30
 #define PTRS_PER_PGD 512
-#define MAX_PTRS_PER_P4D 1
+#define PGD_PAGE_SIZE (__AC(1, UL) << PGD_SHIFT)
+#define PGD_PAGE_MASK (~(PGD_PAGE_SIZE - 1) & VIRTUAL_MASK)
 
-#endif /* CONFIG_X86_5LEVEL */
-
-/*
- * 3rd level page
- */
-#define PUD_SHIFT 30
-#define PTRS_PER_PUD 512
-
-/*
- * PMD_SHIFT determines the size of the area a middle-level
- * page table can map
- */
 #define PMD_SHIFT 21
 #define PTRS_PER_PMD 512
-
 #define PMD_PAGE_SIZE (_AC(1, UL) << PMD_SHIFT)
-#define PMD_PAGE_MASK (~(PMD_PAGE_SIZE - 1))
+#define PMD_PAGE_MASK (~(PMD_PAGE_SIZE - 1) & VIRTUAL_MASK)
 
-#define PUD_PAGE_SIZE (_AC(1, UL) << PUD_SHIFT)
-#define PUD_PAGE_MASK (~(PUD_PAGE_SIZE - 1))
+#define PTE_SHIFT PAGE_SHIFT
+#define PTRS_PER_PTE 512
+#define PTE_PAGE_SIZE PAGE_SIZE
+#define PTE_PAGE_MASK PAGE_MASK
 
-#define __VIRTUAL_MASK ((1UL << __VIRTUAL_MASK_SHIFT) - 1)
-
-/* Cast *PAGE_MASK to a signed type so that it is sign-extended if
-   virtual addresses are 32-bits but physical addresses are larger
-   (ie, 32-bit PAE). */
-#define PHYSICAL_PAGE_MASK (((signed long)PAGE_MASK) & __PHYSICAL_MASK)
-#define PHYSICAL_PMD_PAGE_MASK (((signed long)PMD_PAGE_MASK) & __PHYSICAL_MASK)
-#define PHYSICAL_PUD_PAGE_MASK (((signed long)PUD_PAGE_MASK) & __PHYSICAL_MASK)
+#define VIRTUAL_PAGE_MASK (((signed long)PAGE_MASK) & VIRTUAL_MASK)
+#define PHYSICAL_PAGE_MASK (((signed long)PAGE_MASK) & PHYSICAL_MASK)
 
 #define HPAGE_SHIFT PMD_SHIFT
 #define HPAGE_SIZE (_AC(1, UL) << HPAGE_SHIFT)
 #define HPAGE_MASK (~(HPAGE_SIZE - 1))
-#define HUGETLB_PAGE_ORDER (HPAGE_SHIFT - PAGE_SHIFT)
-
-#define HUGE_MAX_HSTATE 2
 
 // ——————————————————————————— Page bits for flags —————————————————————————— //
 
@@ -147,10 +136,26 @@
  *  This includes the protection key value.
  */
 #define PTE_FLAGS_MASK (~PTE_PFN_MASK)
+
+// ————————————————————————————————— Levels ————————————————————————————————— //
+
+#define PML4 3
+#define PGD 2
+#define PMD 1
+#define PTE 0
+
+// ———————————————————————————— Default profile ————————————————————————————— //
+extern pt_profile_t x86_64_profile;
 // ——————————————————————————————— Functions ———————————————————————————————— //
 
-callback_t x86_64_how(entry_t entry, level_t level, pt_profile_t* profile);
+callback_action_t x86_64_how_visit_leaves(entry_t entry, level_t level, pt_profile_t* profile);
 
-index_t x86_64_get_index(addr_t addr, level_t level);
+callback_action_t x86_64_how_map(entry_t entry, level_t level, pt_profile_t* profile);
 
 entry_t x86_64_next(entry_t entry, level_t curr_level);
+
+callback_action_t x86_64_generic_visitor(entry_t, level_t, pt_profile_t* profile);
+
+callback_action_t x86_64_generic_mapper(entry_t, level_t, pt_profile_t* profile);
+
+#endif
