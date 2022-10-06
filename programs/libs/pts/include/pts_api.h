@@ -26,7 +26,7 @@
 #define MAX_LEVEL 5
 
 /// Cover the address with a typedef in case we need to change that.
-typedef unsigned long addr_t;
+typedef unsigned long long addr_t;
 
 /// Cover the level with a typedef in case we need to change that.
 typedef char level_t;
@@ -53,7 +53,7 @@ struct pt_profile_t;
 
 /// Callback type per entry.
 /// TODO: figure out what we want in there.
-typedef callback_action_t (*callback_t)(entry_t, level_t, struct pt_profile_t*);
+typedef callback_action_t (*callback_t)(entry_t*, level_t, struct pt_profile_t*);
 
 typedef index_t (*get_index_t)(addr_t, level_t);
 
@@ -61,7 +61,7 @@ typedef index_t (*get_index_t)(addr_t, level_t);
 typedef entry_t (*next_level_t)(entry_t, level_t curr_lvl);
 
 /// Allocator for new entries.
-typedef entry_t (*allocator_t)(void*);
+typedef entry_t* (*allocator_t)(void*);
 
 /// Translates an addr_t (i.e., PA -> VA, VA -> PA).
 typedef addr_t (*translator_t)(addr_t);
@@ -100,6 +100,9 @@ typedef struct pt_profile_t {
 
   // Translate from VA to PA.
   translator_t va_to_pa;
+
+  // Whatever the user wants.
+  void* extras;
 
 } pt_profile_t;
 

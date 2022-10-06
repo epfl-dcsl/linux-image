@@ -105,7 +105,7 @@ typedef entry_t pteval_t;
 #define _PAGE_PKEY_BIT1 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT1)
 #define _PAGE_PKEY_BIT2 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT2)
 #define _PAGE_PKEY_BIT3 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT3)
-
+#define _PAGE_NX (_AT(pteval_t, 1) << _PAGE_BIT_NX)
 // ——————————————————————— Short Versions from Linux ———————————————————————— //
 
 #define __PP _PAGE_PRESENT
@@ -145,12 +145,12 @@ typedef entry_t pteval_t;
 #define PTE 0
 
 // ———————————————————————————— Default profile ————————————————————————————— //
-extern pt_profile_t x86_64_profile;
+extern const pt_profile_t x86_64_profile;
 // ——————————————————————————————— Functions ———————————————————————————————— //
 
-callback_action_t x86_64_how_visit_leaves(entry_t entry, level_t level, pt_profile_t* profile);
+callback_action_t x86_64_how_visit_leaves(entry_t* entry, level_t level, pt_profile_t* profile);
 
-callback_action_t x86_64_how_map(entry_t entry, level_t level, pt_profile_t* profile);
+callback_action_t x86_64_how_map(entry_t* entry, level_t level, pt_profile_t* profile);
 
 entry_t x86_64_next(entry_t entry, level_t curr_level);
 

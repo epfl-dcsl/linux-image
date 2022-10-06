@@ -3,7 +3,7 @@
 
 /// Default profile for x86_64.
 /// @warn It is incomplete.
-pt_profile_t x86_64_profile = {
+const pt_profile_t x86_64_profile = {
   .nb_levels = x86_64_LEVELS,
   .nb_entries = PTRS_PER_PTE,
   .masks = {PTE_PAGE_MASK, PMD_PAGE_MASK, PGD_PAGE_MASK, PML4_PAGE_MASK},
@@ -13,23 +13,23 @@ pt_profile_t x86_64_profile = {
 };
 
 /// Example how function that asks to visit present leaves.
-callback_action_t x86_64_how_visit_leaves(entry_t entry, level_t level, pt_profile_t* profile)
+callback_action_t x86_64_how_visit_leaves(entry_t* entry, level_t level, pt_profile_t* profile)
 {
-  if ((entry & __PP) != __PP) {
+  if ((*entry & __PP) != __PP) {
     return SKIP; 
   }
   // We have a Giant or Huge mapping, visit the node.
   if (level == PTE || ((level == PGD || level == PMD) &&
-      ((entry & _PAGE_PAT_LARGE) == _PAGE_PAT_LARGE))) {
+      ((*entry & _PAGE_PAT_LARGE) == _PAGE_PAT_LARGE))) {
     return VISIT;
   }
   return SKIP;
 }
 
 /// Example how function that asks to map missing entries.
-callback_action_t x86_64_how_visit_leafs(entry_t entry, level_t level, pt_profile_t* profile)
+callback_action_t x86_64_how_map(entry_t* entry, level_t level, pt_profile_t* profile)
 {
-  if ((entry & __PP) != __PP) {
+  if ((*entry & __PP) != __PP) {
     return MAP; 
   }
   return SKIP;

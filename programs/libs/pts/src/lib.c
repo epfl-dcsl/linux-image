@@ -22,13 +22,18 @@ int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_pr
     curr_va = (start & ~(profile->masks[level])) 
         | (((addr_t)i) << profile->shifts[level]);
 
+    // Clear the lower bits if we are not at the start anymore.
+    if (i != s) {
+      curr_va = (curr_va >> profile->shifts[level]) << profile->shifts[level]; 
+    }
+
     // If the current address is greater or equal to the end, stop.
     if (curr_va >= end) {
       break;
     }
     // Decide what to do first.
     // We can either MAP -> WALK -> VISIT
-    switch(profile->how(va_root[i], level, profile)) {
+    switch(profile->how(&(va_root[i]), level, profile)) {
       // Skip this entry.
       case SKIP:
         continue;
@@ -48,13 +53,16 @@ int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_pr
 map:
     // Add a mapping.
     if (profile->mappers[level] != 0) {
-      switch(profile->mappers[level](va_root[i], level, profile)) {
+      switch(profile->mappers[level](&va_root[i], level, profile)) {
         // That means we should not walk.
         case DONE:
-          continue;
+          goto walk;
           break;
         case VISIT:
           goto visit;
+          break;
+        case SKIP:
+          continue;
           break;
         // Should never happen.
         case MAP:
@@ -66,7 +74,7 @@ map:
 visit:
     // Walk the mapping.
     if (profile->visitors[level] != 0) {
-      switch(profile->visitors[level](va_root[i], level, profile)) {
+      switch(profile->visitors[level](&va_root[i], level, profile)) {
         // The only acceptable return values.
         case DONE:
           // Recursive walk to the next level.
