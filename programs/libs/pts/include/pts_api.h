@@ -13,11 +13,15 @@
     }                                                                \
   } while (0);
 #else
-#define TEST(cond) \
-  do {             \
-    if (!(cond)) { \
-      return -1;   \
-    }              \
+int printk(const char* fmt, ...);
+int printk(const char* fmt, ...) __attribute__((weak));
+#define TEST(cond)                                                             \
+  do {                                                                         \
+    if (!(cond)) {                                                             \
+      int* ptr = 0;                                                            \
+      printk("[%s:%c] %s: Invalid condition\n", __FILE__, __LINE__, __func__); \
+      while (1) { };                                                           \
+    }                                                                          \
   } while (0);
 #endif
 
