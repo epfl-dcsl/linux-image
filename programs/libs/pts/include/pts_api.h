@@ -38,8 +38,8 @@ typedef unsigned int index_t;
 typedef addr_t entry_t;
 
 typedef enum {
-  // The invocation on that entry is done.
-  DONE = 0,
+  // The invocation requires to keep walking the subtree.
+  WALK = 0,
   // The invocation requires a walk of the subtree.
   VISIT = 1,
   // The invocation requires a map.

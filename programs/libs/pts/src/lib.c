@@ -38,13 +38,17 @@ int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_pr
       case SKIP:
         continue;
         break;
-      // VISIT this entry.
+      // Visit this entry.
       case VISIT:
         goto visit;
         break;
       // Map this entry.
       case MAP:
         goto map;
+        break;
+      // Keep walking.
+      case WALK:
+        goto walk;
         break;
       default:
         TEST(0);
@@ -55,7 +59,7 @@ map:
     if (profile->mappers[level] != 0) {
       switch(profile->mappers[level](&va_root[i], level, profile)) {
         // That means we should not walk.
-        case DONE:
+        case WALK:
           goto walk;
           break;
         case VISIT:
@@ -76,7 +80,7 @@ visit:
     if (profile->visitors[level] != 0) {
       switch(profile->visitors[level](&va_root[i], level, profile)) {
         // The only acceptable return values.
-        case DONE:
+        case WALK:
           // Recursive walk to the next level.
           goto walk;
           break;

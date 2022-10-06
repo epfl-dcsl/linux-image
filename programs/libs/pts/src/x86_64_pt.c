@@ -23,7 +23,7 @@ callback_action_t x86_64_how_visit_leaves(entry_t* entry, level_t level, pt_prof
       ((*entry & _PAGE_PAT_LARGE) == _PAGE_PAT_LARGE))) {
     return VISIT;
   }
-  return SKIP;
+  return WALK;
 }
 
 /// Example how function that asks to map missing entries.
@@ -32,7 +32,7 @@ callback_action_t x86_64_how_map(entry_t* entry, level_t level, pt_profile_t* pr
   if ((*entry & __PP) != __PP) {
     return MAP; 
   }
-  return SKIP;
+  return WALK;
 }
 
 index_t x86_64_get_index(addr_t addr, level_t level, pt_profile_t* profile)

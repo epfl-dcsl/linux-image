@@ -63,6 +63,7 @@ typedef struct virt_addr_t {
 } virt_addr_t;
 
 typedef struct extras_t {
+  entry_t root;
   entry_t flags;
   size_t invoc_count;
 } extras_t;
@@ -95,41 +96,88 @@ callback_action_t pte_page_mapper(entry_t* curr, level_t level, pt_profile_t* pr
   TEST((((entry_t)new_page) % PAGE_SIZE) == 0); 
   *curr = (((entry_t)new_page) & PHYSICAL_PAGE_MASK) | extra->flags;
   if (level == PTE) {
+    extra->invoc_count++;
+  }
+  return WALK; 
+}
+
+callback_action_t pte_page_visit(entry_t* curr, level_t level, pt_profile_t* profile)
+{
+  TEST(curr != NULL);
+  TEST(profile != NULL);
+  TEST((*curr & _PAGE_PRESENT) == 1);
+  TEST(profile->extras !=NULL);
+  if (level == PTE) {
     extras_t* extras = (extras_t*) profile->extras;
     extras->invoc_count++;
   }
-  return DONE; 
+  return WALK; 
 }
 
 void test_simple_map(pt_profile_t* profile)
 {
+  // Configure the mappers.
+  profile->how = x86_64_how_map;
+  profile->mappers[PTE] = pte_page_mapper;
+  profile->mappers[PMD] = pte_page_mapper;
+  profile->mappers[PGD] = pte_page_mapper;
+  profile->mappers[PML4] = pte_page_mapper;
+  profile->allocate = alloc; 
+  profile->pa_to_va = pa_to_va;
+  profile->va_to_pa = va_to_pa;
   // Let's just map 3 ptes as a start.
   virt_addr_t start = {0, 0, 0, 0};
   virt_addr_t end = {0, 0, 0, 3};
   addr_t s = create_virt_addr(start);
   addr_t e = create_virt_addr(end);
-  extras_t extra = {__PP | _USR | __RW | __NX, 0};
-  profile->extras = (void*) &extra;
+  extras_t* extra = (extras_t*)(profile->extras);
+  TEST(extra!=NULL);
   entry_t* root = profile->allocate(NULL); 
-  walk_page_range((entry_t) root, PML4, s, e, profile);
+  extra->root = (entry_t) root;
+  TEST(walk_page_range((entry_t) root, PML4, s, e, profile) == 0);
   // Check that we mapped 3 ptes
-  TEST(extra.invoc_count == 3);
-  LOG("TEST simple map DONE");
-  
+  TEST(extra->invoc_count == 3);
+  LOG("Done mapping.");
+
+  // Now let's check they are mapped.
+  extra->invoc_count = 0;
+  profile->how = x86_64_how_visit_leaves; 
+  profile->visitors[PTE] = pte_page_visit;
+  TEST(walk_page_range((entry_t) root, PML4, s, e, profile) == 0);
+  TEST(extra->invoc_count == 3);
+  LOG("Done walking.")
+}
+
+void test_boundary_map(pt_profile_t* profile)
+{
+  extras_t* extra = (extras_t*)(profile->extras);
+  TEST(extra!=NULL);
+  extra->invoc_count = 0;
+  profile->how = x86_64_how_map;
+  // Virtual addresses with boundary crossing on pmd.
+  virt_addr_t start = {1, 0, 0, 510};
+  virt_addr_t end = {1, 0, 1, 2};
+  addr_t s = create_virt_addr(start);
+  addr_t e = create_virt_addr(end);
+  TEST(walk_page_range(extra->root, PML4, s, e, profile) == 0); 
+  TEST(extra->invoc_count == 4);
+  LOG("Done mapping over a boundary");
+
+  // Now read them.
+  extra->invoc_count = 0;
+  profile->how = x86_64_how_visit_leaves;
+  TEST(walk_page_range(extra->root, PML4, s, e, profile) == 0);
+  TEST(extra->invoc_count == 4);
+  LOG("Done walking over a boundary");
 }
 
 int main(void) {
   LOG("TESTING X86_64 PTs");
   init_allocator();
   pt_profile_t my_profile = x86_64_profile;
-  my_profile.how = x86_64_how_map;
-  my_profile.mappers[PTE] = pte_page_mapper;
-  my_profile.mappers[PMD] = pte_page_mapper;
-  my_profile.mappers[PGD] = pte_page_mapper;
-  my_profile.mappers[PML4] = pte_page_mapper;
-  my_profile.allocate = alloc; 
-  my_profile.pa_to_va = pa_to_va;
-  my_profile.va_to_pa = va_to_pa;
+  extras_t extra = {0, __PP | _USR | __RW | __NX, 0};
+  my_profile.extras = (void*) &extra;
   test_simple_map(&my_profile);
+  test_boundary_map(&my_profile);
   return 0;
 }

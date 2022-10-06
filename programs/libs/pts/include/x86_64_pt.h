@@ -14,29 +14,31 @@ typedef entry_t pteval_t;
 // ——————————————————————————— Page Configuration ——————————————————————————— //
 /* PAGE_SHIFT determines the page size */
 
-#define VIRTUAL_MASK_SHIFT 47
-#define VIRTUAL_MASK ((1UL << VIRTUAL_MASK_SHIFT) - 1)
+#define VIRTUAL_MASK_SHIFT 47UL
+#define VIRTUAL_MASK ((1UL << VIRTUAL_MASK_SHIFT) - 1UL)
 
-#define PHYSICAL_MASK_SHIFT 52
-#define PHYSICAL_MASK ((1UL << PHYSICAL_MASK_SHIFT) - 1)
-#define PAGE_SHIFT 12
+#define ENTRY_MASK 511UL
+
+#define PHYSICAL_MASK_SHIFT 52UL
+#define PHYSICAL_MASK ((1UL << PHYSICAL_MASK_SHIFT) - 1UL)
+#define PAGE_SHIFT 12UL
 #define PAGE_SIZE (_AC(1, UL) << PAGE_SHIFT)
-#define PAGE_MASK (~(PAGE_SIZE - 1) & VIRTUAL_MASK)
+#define PAGE_MASK ((ENTRY_MASK << PAGE_SHIFT) & VIRTUAL_MASK)
 
-#define PML4_SHIFT 39
+#define PML4_SHIFT 39UL
 #define PTRS_PER_PML4 512
 #define PML4_PAGE_SIZE (__AC(1, UL) << PML4_SHIFT)
-#define PML4_PAGE_MASK (~(PML4_PAGE_SIZE - 1) & VIRTUAL_MASK)
+#define PML4_PAGE_MASK ((ENTRY_MASK << PML4_SHIFT) & VIRTUAL_MASK)
 
-#define PGD_SHIFT 30
+#define PGD_SHIFT 30UL
 #define PTRS_PER_PGD 512
 #define PGD_PAGE_SIZE (__AC(1, UL) << PGD_SHIFT)
-#define PGD_PAGE_MASK (~(PGD_PAGE_SIZE - 1) & VIRTUAL_MASK)
+#define PGD_PAGE_MASK ((ENTRY_MASK << PGD_SHIFT) & VIRTUAL_MASK)
 
-#define PMD_SHIFT 21
-#define PTRS_PER_PMD 512
+#define PMD_SHIFT 21UL
+#define PTRS_PER_PMD 512UL
 #define PMD_PAGE_SIZE (_AC(1, UL) << PMD_SHIFT)
-#define PMD_PAGE_MASK (~(PMD_PAGE_SIZE - 1) & VIRTUAL_MASK)
+#define PMD_PAGE_MASK ((ENTRY_MASK << PMD_SHIFT) & VIRTUAL_MASK)
 
 #define PTE_SHIFT PAGE_SHIFT
 #define PTRS_PER_PTE 512
@@ -48,7 +50,7 @@ typedef entry_t pteval_t;
 
 #define HPAGE_SHIFT PMD_SHIFT
 #define HPAGE_SIZE (_AC(1, UL) << HPAGE_SHIFT)
-#define HPAGE_MASK (~(HPAGE_SIZE - 1))
+#define HPAGE_MASK (~(HPAGE_SIZE - 1UL))
 
 // ——————————————————————————— Page bits for flags —————————————————————————— //
 
