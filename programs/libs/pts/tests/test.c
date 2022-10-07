@@ -22,7 +22,7 @@ typedef struct pte_t {
 } pte_t;
 
 #define ALLOC_NB_ENTRIES 2000
-#define ALLOC_RAW_SIZE  (ALLOC_NB_ENTRIES * PAGE_SIZE)
+#define ALLOC_RAW_SIZE  (ALLOC_NB_ENTRIES * PT_PAGE_SIZE)
 
 /// Allocator of ptes that uses the pool above.
 typedef struct pte_allocator_t {
@@ -50,7 +50,7 @@ addr_t va_to_pa(addr_t addr) {
 entry_t* alloc(void* ptr) {
   TEST(allocator.next_free < allocator.end);
   entry_t* allocation = (entry_t*) allocator.next_free;
-  allocator.next_free += PAGE_SIZE; 
+  allocator.next_free += PT_PAGE_SIZE; 
   return (entry_t*) va_to_pa((addr_t)allocation);
 }
 
@@ -70,10 +70,10 @@ typedef struct extras_t {
 
 addr_t create_virt_addr(virt_addr_t virt)
 {
-  return (_AT(addr_t, virt.pml4_idx) << PML4_SHIFT) |
-         (_AT(addr_t, virt.pgd_idx) << PGD_SHIFT) |
-         (_AT(addr_t, virt.pmd_idx) << PMD_SHIFT) |
-         (_AT(addr_t, virt.pte_idx) << PTE_SHIFT);
+  return (PT_AT(addr_t, virt.pml4_idx) << PT_PML4_SHIFT) |
+         (PT_AT(addr_t, virt.pgd_idx) << PT_PGD_SHIFT) |
+         (PT_AT(addr_t, virt.pmd_idx) << PT_PMD_SHIFT) |
+         (PT_AT(addr_t, virt.pte_idx) << PT_PTE_SHIFT);
 }
 
 static void init_allocator()
@@ -89,13 +89,13 @@ callback_action_t pte_page_mapper(entry_t* curr, level_t level, pt_profile_t* pr
 {
   TEST(curr != NULL);
   TEST(profile != NULL);
-  TEST((*curr & _PAGE_PRESENT) == 0);
+  TEST((*curr & PT_PP) == 0);
   TEST(profile->extras !=NULL);
   extras_t* extra = (extras_t*)(profile->extras);
   entry_t* new_page = profile->allocate(NULL);
-  TEST((((entry_t)new_page) % PAGE_SIZE) == 0); 
-  *curr = (((entry_t)new_page) & PHYSICAL_PAGE_MASK) | extra->flags;
-  if (level == PTE) {
+  TEST((((entry_t)new_page) % PT_PAGE_SIZE) == 0); 
+  *curr = (((entry_t)new_page) & PT_PHYS_PAGE_MASK) | extra->flags;
+  if (level == PT_PTE) {
     extra->invoc_count++;
   }
   return WALK; 
@@ -105,9 +105,9 @@ callback_action_t pte_page_visit(entry_t* curr, level_t level, pt_profile_t* pro
 {
   TEST(curr != NULL);
   TEST(profile != NULL);
-  TEST((*curr & _PAGE_PRESENT) == 1);
+  TEST((*curr & PT_PP) == 1);
   TEST(profile->extras !=NULL);
-  if (level == PTE) {
+  if (level == PT_PTE) {
     extras_t* extras = (extras_t*) profile->extras;
     extras->invoc_count++;
   }
@@ -118,10 +118,10 @@ void test_simple_map(pt_profile_t* profile)
 {
   // Configure the mappers.
   profile->how = x86_64_how_map;
-  profile->mappers[PTE] = pte_page_mapper;
-  profile->mappers[PMD] = pte_page_mapper;
-  profile->mappers[PGD] = pte_page_mapper;
-  profile->mappers[PML4] = pte_page_mapper;
+  profile->mappers[PT_PTE] = pte_page_mapper;
+  profile->mappers[PT_PMD] = pte_page_mapper;
+  profile->mappers[PT_PGD] = pte_page_mapper;
+  profile->mappers[PT_PML4] = pte_page_mapper;
   profile->allocate = alloc; 
   profile->pa_to_va = pa_to_va;
   profile->va_to_pa = va_to_pa;
@@ -134,7 +134,7 @@ void test_simple_map(pt_profile_t* profile)
   TEST(extra!=NULL);
   entry_t* root = profile->allocate(NULL); 
   extra->root = (entry_t) root;
-  TEST(walk_page_range((entry_t) root, PML4, s, e, profile) == 0);
+  TEST(walk_page_range((entry_t) root, PT_PML4, s, e, profile) == 0);
   // Check that we mapped 3 ptes
   TEST(extra->invoc_count == 3);
   LOG("Done mapping.");
@@ -142,8 +142,8 @@ void test_simple_map(pt_profile_t* profile)
   // Now let's check they are mapped.
   extra->invoc_count = 0;
   profile->how = x86_64_how_visit_leaves; 
-  profile->visitors[PTE] = pte_page_visit;
-  TEST(walk_page_range((entry_t) root, PML4, s, e, profile) == 0);
+  profile->visitors[PT_PTE] = pte_page_visit;
+  TEST(walk_page_range((entry_t) root, PT_PML4, s, e, profile) == 0);
   TEST(extra->invoc_count == 3);
   LOG("Done walking.")
 }
@@ -159,14 +159,14 @@ void test_boundary_map(pt_profile_t* profile)
   virt_addr_t end = {1, 0, 1, 2};
   addr_t s = create_virt_addr(start);
   addr_t e = create_virt_addr(end);
-  TEST(walk_page_range(extra->root, PML4, s, e, profile) == 0); 
+  TEST(walk_page_range(extra->root, PT_PML4, s, e, profile) == 0); 
   TEST(extra->invoc_count == 4);
   LOG("Done mapping over a boundary");
 
   // Now read them.
   extra->invoc_count = 0;
   profile->how = x86_64_how_visit_leaves;
-  TEST(walk_page_range(extra->root, PML4, s, e, profile) == 0);
+  TEST(walk_page_range(extra->root, PT_PML4, s, e, profile) == 0);
   TEST(extra->invoc_count == 4);
   LOG("Done walking over a boundary");
 }
@@ -175,7 +175,7 @@ int main(void) {
   LOG("TESTING X86_64 PTs");
   init_allocator();
   pt_profile_t my_profile = x86_64_profile;
-  extras_t extra = {0, __PP | _USR | __RW | __NX, 0};
+  extras_t extra = {0, PT_PP | PT_USR | PT_RW | PT_NX, 0};
   my_profile.extras = (void*) &extra;
   test_simple_map(&my_profile);
   test_boundary_map(&my_profile);
