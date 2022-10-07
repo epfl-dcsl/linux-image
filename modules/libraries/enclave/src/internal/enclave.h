@@ -37,11 +37,12 @@ struct region_t {
 
 /// Describes physical memory regions.
 struct pa_region_t {
-  dll_elem(struct pa_region_t, list);
-  dll_elem(struct pa_region_t, globals);
   uint64_t start;
   uint64_t end;
   enum tyche_encl_mapping_t tpe;
+
+  dll_elem(struct pa_region_t, list);
+  dll_elem(struct pa_region_t, globals);
 };
 
 /// Describes an enclave.

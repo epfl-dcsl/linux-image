@@ -26,6 +26,7 @@ struct tyche_encl_create_t {
 enum tyche_encl_mapping_t {
   Confidential,
   Shared,
+  PtEntry,
 };
 
 /// Message type to add a new region.
