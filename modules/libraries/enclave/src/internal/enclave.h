@@ -48,16 +48,24 @@ struct pa_region_t {
 struct enclave_t {
   /// The pid of the task that created this enclave.
   pid_t pid;
-  /// Enclaves belong to a list.
-  dll_elem(struct enclave_t, list);
+
   /// Unique enclave identifier
   tyche_encl_handle_t handle;
+
+  /// TODO add the physical value of cr3.
+  /// TODO add the virtual value of cr3 (the root page).
+
+  /// List of pages used by page tables.
+  dll_list(struct pa_region_t, pts);
+
+  /// Enclaves belong to a list.
+  dll_elem(struct enclave_t, list);
 
   /// List of regions that belong to this enclave.
   dll_list(struct region_t, regions);
 
-  /// List of pages used by page tables.
-  dll_list(struct pa_region_t, pts);
+  /// List of physical regions associated with this enclave.
+  dll_list(struct pa_region_t, all_pages);
 };
 
 // —————————————————————————————— Enclave API ——————————————————————————————— //
@@ -65,5 +73,6 @@ void enclave_init(void);
 int add_enclave(tyche_encl_handle_t handle);
 int add_region(struct tyche_encl_add_region_t* region);
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region);
+int commit_enclave(tyche_encl_handle_t handle);
 
 #endif

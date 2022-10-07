@@ -1,10 +1,15 @@
 TARGET_MODULE:=tyche_enclave
 
 ## ———————————————————————— Use Tyche's Linux build ————————————————————————— ##
-BUILDSYSTEM_DIR ?= ../../../builds/linux-tyche-embedded/ 
+BUILDSYSTEM_DIR ?= ../../../builds/linux-tyche-embedded/
 
-$(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o src/internal/process.o
+LIB_PT=../../../programs/libs/pts
+
+
+$(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o src/internal/process.o src/internal/mapper.o
 obj-m := $(TARGET_MODULE).o
+foo-obs += $(LIB_PT)/libpts.a
+ccflags-y += -I$(src)/$(LIB_PT)/include
 
 ## ——————————————————— Where to generate the build files ———————————————————— ##
 PWD:=$(shell pwd)

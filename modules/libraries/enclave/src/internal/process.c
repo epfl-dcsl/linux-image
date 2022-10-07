@@ -27,7 +27,7 @@ static int pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
     pr_err("[TE]: Unable to retrieve info in pte_entry.\n");
     goto failure;
   }
-  if (info->region-> start > addr || info->region->end < addr) {
+  if (info->region->start > addr || info->region->end < addr) {
     goto failure_with_info;
   }
   if ((pte->pte & _PAGE_VALID) != _PAGE_VALID) {

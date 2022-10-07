@@ -2,6 +2,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include "enclave.h"
+#include "mapper.h"
 #include "process.h"
 
 #define PAGE 0x1000
@@ -62,6 +63,26 @@ failure:
   return 0;
 }
 
+static struct enclave_t* find_enclave(tyche_encl_handle_t handle)
+{
+  struct enclave_t* encl = NULL; 
+  dll_foreach((&enclaves), encl, list) {
+    if (encl->handle == handle)
+      break;
+  }
+  // We could not find the enclave.
+  if (!encl) {
+    pr_err("[TE]: Enclave not found in add_region.\n");
+    return NULL;
+  }
+  // Check that the task calling is the one that created the enclave.
+  if (encl->pid != current->pid) {
+    pr_err("[TE]: Attempt to add a page to an enclave from a different task!\n");
+    return NULL;
+  }
+  return encl;
+}
+
 void enclave_init(void)
 {
   dll_init_list((&enclaves));
@@ -92,6 +113,7 @@ int add_enclave(tyche_encl_handle_t handle)
   encl->handle = handle;
   dll_init_list(&encl->regions);
   dll_init_list(&encl->pts);
+  dll_init_list(&encl->all_pages);
   dll_init_elem(encl, list);
   // Add to the new enclave to the list.
   dll_add((&enclaves), encl, list);
@@ -116,18 +138,10 @@ int add_region(struct tyche_encl_add_region_t* region)
   struct region_t* prev = NULL;
   struct region_t* e_reg = NULL;
   struct region_t* reg_iter = NULL;
-  dll_foreach((&enclaves), encl, list) {
-    if (encl->handle == region->handle)
-      break;
-  }
-  // We could not find the enclave.
-  if (!encl) {
-    pr_err("[TE]: Enclave not found in add_region.\n");
-    return -1;
-  }
-  // Check that the task calling is the one that created the enclave.
-  if (encl->pid != current->pid) {
-    pr_err("[TE]: Attempt to add a page to an enclave from a different task!\n");
+  
+  // Find the enclave.
+  encl = find_enclave(region->handle);
+  if (encl == NULL) {
     return -1;
   }
  
@@ -153,65 +167,117 @@ int add_region(struct tyche_encl_add_region_t* region)
   dll_init_elem(e_reg, list); 
 
   // Check there is no overlap with other regions.
-  // TODO Should we merge here?
-  dll_foreach((&encl->regions), reg_iter, list) {
+  // We keep the list sorted and attempt to merge regions whenever possible. 
+  for (reg_iter = encl->regions.head; reg_iter != NULL;) {
     if (overlap(reg_iter->start, reg_iter->end, e_reg->start, e_reg->end)) {
       pr_err("[TE]: Virtual address overlap detected.\n");
       goto failure;
     } 
-    if (reg_iter->end <= e_reg->start) {
-      prev = reg_iter; 
-    }
-    if (reg_iter->start >= e_reg->end) {
+
+    // CASES WHERE: e_reg is on the left.
+
+    // Too far in the list already and no merge.
+    if (reg_iter->start > e_reg->end || (reg_iter->start == e_reg->end && reg_iter->tpe != e_reg->tpe)) {
+      prev = reg_iter;
       break;
     }
-  }
-
-  // Check that the full region is mapped and collect the relevant physical pages. 
-  if (walk_and_collect_region(e_reg) != 0) {
-    pr_err("[TE]: Invalid memory region.\n");
-    goto failure;
-  }
-
-  //Check physical pages are not already mapped in the enclave with different types.
-  reg_iter = NULL;
-  dll_foreach(&encl->regions, reg_iter, list) {
-    struct pa_region_t* e_pa = NULL;
-    if (reg_iter == e_reg) {
-      continue;
+    
+    // Contiguous, we need to merge.
+    // The second part of the && is redundant but makes code more readable.
+    if( reg_iter->start == e_reg->end && reg_iter->tpe == e_reg->tpe) {
+      reg_iter->start = e_reg->start;
+      kfree(e_reg);
+      e_reg = NULL;
+      prev = NULL;
+      break;
     }
-    dll_foreach(&e_reg->pas, e_pa, list) {
-      struct pa_region_t* o_pa = NULL;
-      dll_foreach(&reg_iter->pas, o_pa, list) {
-        if (o_pa->tpe != e_pa->tpe && overlap(o_pa->start, o_pa->end, e_pa->start, e_pa->end)) {
-          pr_err("[TE]: The supplied region has overlaps in the physical domain with different tpes.\n");
-          goto failure_undo;
-        }
+
+    // CASES WHERE: e_reg is on the right.
+   
+    // Safely skip this entry.
+    if (reg_iter->end < e_reg->start ||
+      (reg_iter->end == e_reg->start && reg_iter->tpe != e_reg->tpe)) {
+      goto next;
+    }
+
+    // We need to merge and have no guarantee that the next region does not
+    // overlap.
+    // Once again, the tpe check is redundant and is for readabilitty.
+    if (reg_iter->end == e_reg->start && reg_iter->tpe == e_reg->tpe) {
+      struct region_t* next = reg_iter->list.next;
+      // There is an overlap with the next element.
+      // We cannot add the region to the list.
+      if (next != NULL && overlap(reg_iter->start, e_reg->end, next->start, next->end)){
+        goto failure;
       }
-    } 
+      // Merge and remove.
+      e_reg->start = reg_iter->start;
+      dll_remove(&(encl->regions), reg_iter, list);
+      kfree(reg_iter);
+      break;
+    }
+    // We should never get here.
+next:
+    prev = reg_iter;
+    reg_iter = reg_iter->list.next;
   }
-  //TODO generate the cr3
-  
-  // Add the region to the enclave
-  if (prev) {
-    dll_add_after((&encl->regions), e_reg, list, prev);
+
+  // The region has been merged.
+  if (e_reg == NULL) {
+    goto done;
+  }
+
+  if (prev != NULL) {
+    dll_add_after(&encl->regions, e_reg, list, prev);
   } else {
-    dll_add_first((&encl->regions), e_reg, list);
+    dll_add_first(&encl->regions, e_reg, list);
   }
-  printk(KERN_NOTICE "[TE]: %llx received region %llx - %llx\n", encl->handle, e_reg->start, e_reg->end);
+done:
   return 0;
-failure_undo:
-  // Free all resources allocated to e_reg;
-  delete_region_pas(e_reg);
 failure:
   kfree(e_reg);
   pr_err("[TE]: add_region failure.\n");
   return -1;
 }
 
+/// Done adding virtual regions to an enclave.
+/// Commit the regions and find the corresponding physical pages.
+/// @warn: Not the most efficient implementation, we go through the list
+/// several times. We could merge all of this within the loop.
+/// For now, keep it this way to ease debugging and readability.
+int commit_enclave(tyche_encl_handle_t handle)
+{
+  struct enclave_t* encl = NULL; 
+  struct region_t* region = NULL;
+  encl = find_enclave(handle);
+  if (encl == NULL) {
+    return -1;
+  }
+
+  dll_foreach(&(encl->regions), region, list) {
+    // Collect the physical pages.
+    if (walk_and_collect_region(region) != 0) {
+      goto failure; 
+    }
+  }
+  //TODO create the cr3.
+  if (build_enclave_cr3(encl)) {
+    goto failure;
+  }
+  return 0;
+
+  //TODO check for overlaps.
+failure:
+  // Delete all the pas.
+  dll_foreach(&(encl->regions), region, list) {
+    delete_region_pas(region);
+  }
+  return -1;
+}
+
 /// Adds a physical range to an enclave region.
 /// This function keeps the list of region.pas sorted and attempts to merge
-/// pas whenever possible. As a result, the pa_region might get freed and nullify. 
+/// pas whenever possible. As a result, the pa_region might get freed and nullified. 
 /// @COMMENT: The checks on the tpe are useless for now (as the tpe are always supposed to be the same).
 /// I keep them just in case I manage to make this function reusable for other lists.
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
@@ -245,6 +311,7 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
       curr->start = (*pa_region)->start;
       kfree(*pa_region);
       *pa_region = NULL;
+      prev = NULL;
       break;
     }
 
@@ -258,19 +325,15 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
 
     // We need to merge, but have no guarantee that the next region does not
     // overlap.
-    // TODO maybe go through the list twice, once to check for overlaps,
-    // and once to add the element?
     if (curr->end == (*pa_region)->start && curr->tpe == (*pa_region)->tpe) {
+      struct pa_region_t* next = curr->list.next;
+      if (next != NULL && overlap(curr->start, (*pa_region)->end, next->start, next->end)) {
+        return -1;
+      }
       (*pa_region)->start = curr->start;
       dll_remove(&region->pas, curr, list);
       kfree(curr);
-      curr = prev;
-      if (prev != NULL) {
-        prev = curr->list.prev;
-      } else {
-        curr = region->pas.head; 
-        continue;
-      }
+      break;
     } 
 
 next:

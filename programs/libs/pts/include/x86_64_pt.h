@@ -9,7 +9,6 @@
 #define _AT(T, X) ((T)(X))
 #define __AC(X, Y) (X##Y)
 #define _AC(X, Y) __AC(X, Y)
-typedef entry_t pteval_t;
 
 // ——————————————————————————— Page Configuration ——————————————————————————— //
 /* PAGE_SHIFT determines the page size */
@@ -87,27 +86,27 @@ typedef entry_t pteval_t;
 
 // —————————————————————————————— Actual Flags —————————————————————————————— //
 
-#define _PAGE_PRESENT (_AT(pteval_t, 1) << _PAGE_BIT_PRESENT)
-#define _PAGE_RW (_AT(pteval_t, 1) << _PAGE_BIT_RW)
-#define _PAGE_USER (_AT(pteval_t, 1) << _PAGE_BIT_USER)
-#define _PAGE_PWT (_AT(pteval_t, 1) << _PAGE_BIT_PWT)
-#define _PAGE_PCD (_AT(pteval_t, 1) << _PAGE_BIT_PCD)
-#define _PAGE_ACCESSED (_AT(pteval_t, 1) << _PAGE_BIT_ACCESSED)
-#define _PAGE_DIRTY (_AT(pteval_t, 1) << _PAGE_BIT_DIRTY)
-#define _PAGE_PSE (_AT(pteval_t, 1) << _PAGE_BIT_PSE)
-#define _PAGE_GLOBAL (_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
-#define _PAGE_SOFTW1 (_AT(pteval_t, 1) << _PAGE_BIT_SOFTW1)
-#define _PAGE_SOFTW2 (_AT(pteval_t, 1) << _PAGE_BIT_SOFTW2)
-#define _PAGE_SOFTW3 (_AT(pteval_t, 1) << _PAGE_BIT_SOFTW3)
-#define _PAGE_PAT (_AT(pteval_t, 1) << _PAGE_BIT_PAT)
-#define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
-#define _PAGE_SPECIAL (_AT(pteval_t, 1) << _PAGE_BIT_SPECIAL)
-#define _PAGE_CPA_TEST (_AT(pteval_t, 1) << _PAGE_BIT_CPA_TEST)
-#define _PAGE_PKEY_BIT0 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT0)
-#define _PAGE_PKEY_BIT1 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT1)
-#define _PAGE_PKEY_BIT2 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT2)
-#define _PAGE_PKEY_BIT3 (_AT(pteval_t, 1) << _PAGE_BIT_PKEY_BIT3)
-#define _PAGE_NX (_AT(pteval_t, 1) << _PAGE_BIT_NX)
+#define _PAGE_PRESENT (_AT(entry_t, 1) << _PAGE_BIT_PRESENT)
+#define _PAGE_RW (_AT(entry_t, 1) << _PAGE_BIT_RW)
+#define _PAGE_USER (_AT(entry_t, 1) << _PAGE_BIT_USER)
+#define _PAGE_PWT (_AT(entry_t, 1) << _PAGE_BIT_PWT)
+#define _PAGE_PCD (_AT(entry_t, 1) << _PAGE_BIT_PCD)
+#define _PAGE_ACCESSED (_AT(entry_t, 1) << _PAGE_BIT_ACCESSED)
+#define _PAGE_DIRTY (_AT(entry_t, 1) << _PAGE_BIT_DIRTY)
+#define _PAGE_PSE (_AT(entry_t, 1) << _PAGE_BIT_PSE)
+#define _PAGE_GLOBAL (_AT(entry_t, 1) << _PAGE_BIT_GLOBAL)
+#define _PAGE_SOFTW1 (_AT(entry_t, 1) << _PAGE_BIT_SOFTW1)
+#define _PAGE_SOFTW2 (_AT(entry_t, 1) << _PAGE_BIT_SOFTW2)
+#define _PAGE_SOFTW3 (_AT(entry_t, 1) << _PAGE_BIT_SOFTW3)
+#define _PAGE_PAT (_AT(entry_t, 1) << _PAGE_BIT_PAT)
+#define _PAGE_PAT_LARGE (_AT(entry_t, 1) << _PAGE_BIT_PAT_LARGE)
+#define _PAGE_SPECIAL (_AT(entry_t, 1) << _PAGE_BIT_SPECIAL)
+#define _PAGE_CPA_TEST (_AT(entry_t, 1) << _PAGE_BIT_CPA_TEST)
+#define _PAGE_PKEY_BIT0 (_AT(entry_t, 1) << _PAGE_BIT_PKEY_BIT0)
+#define _PAGE_PKEY_BIT1 (_AT(entry_t, 1) << _PAGE_BIT_PKEY_BIT1)
+#define _PAGE_PKEY_BIT2 (_AT(entry_t, 1) << _PAGE_BIT_PKEY_BIT2)
+#define _PAGE_PKEY_BIT3 (_AT(entry_t, 1) << _PAGE_BIT_PKEY_BIT3)
+#define _PAGE_NX (_AT(entry_t, 1) << _PAGE_BIT_NX)
 // ——————————————————————— Short Versions from Linux ———————————————————————— //
 
 #define __PP _PAGE_PRESENT
@@ -118,7 +117,7 @@ typedef entry_t pteval_t;
 #define ___G _PAGE_GLOBAL
 #define __NX _PAGE_NX
 
-#define __pg(x) _AT(pteval_t, x)
+#define __pg(x) _AT(entry_t, x)
 
 #define PAGE_NONE __pg(0 | 0 | 0 | ___A | 0 | 0 | 0 | ___G)
 #define PAGE_SHARED __pg(__PP | __RW | _USR | ___A | __NX | 0 | 0 | 0)
@@ -131,7 +130,7 @@ typedef entry_t pteval_t;
 
 // ————————————————————————————————— Masks —————————————————————————————————— //
 /* Extracts the PFN from a (pte|pmd|pud|pgd)val_t of a 4KB page */
-#define PTE_PFN_MASK ((pteval_t)PHYSICAL_PAGE_MASK)
+#define PTE_PFN_MASK ((entry_t)PHYSICAL_PAGE_MASK)
 
 /*
  *  Extracts the flags from a (pte|pmd|pud|pgd)val_t
