@@ -20,7 +20,7 @@ static int pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
   struct pa_region_t* pa_region = NULL;
   uint64_t phys_addr = 0;
   struct walker_info_t* info = (struct walker_info_t*)(walk->private);
-  //printk(KERN_NOTICE "[TE]: In a pte entry! %lx -- %lx\n", addr, pte->pte);
+  printk(KERN_NOTICE "[PTE ENTRY]: %lx -- %lx | %lx\n", addr, next, next - addr);
 
   // Safety checks.
   if (info == NULL || info->region == NULL) {
@@ -51,8 +51,6 @@ static int pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
     pr_err("[TE]: Error adding pa_region to region\n");
     goto failure_with_malloc;
   }
-  // @WARNING do not access pa_region after this point as it might have been
-  // merged into another pa region.
   return 0;
 
   // Error handling.
@@ -67,7 +65,24 @@ failure:
 static int hugetlb_entry(pte_t *pte, unsigned long hmask,
 			     unsigned long addr, unsigned long next,
 			     struct mm_walk *walk) {
-  printk(KERN_NOTICE "[TE]: In huge pte_entry!\n");
+//  struct pa_region_t* pa_region = NULL;
+//  uint64_t phys_addr = 0;
+//  struct walker_info_t* info = (struct walker_info_t*)(walk->private);
+//  
+//  // Safety checks.
+//  if (info == NULL || info->region == NULL) {
+//    pr_err("[TE]: Unable to retrieve info in pte_entry.\n");
+//    goto failure;
+//  }
+//  if (info->region->start > addr || info->region->end < addr) {
+//    goto failure_with_info;
+//  }
+//  if ((pte->pte & _PAGE_VALID) != _PAGE_VALID) {
+//    pr_err("[TE]: Missing minimal access rights for pte.\n");
+//    goto failure_with_info;
+//  }
+
+  //TODO implement or merge with pte entry.
   return 0;
 }
 

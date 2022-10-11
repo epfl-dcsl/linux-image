@@ -177,14 +177,18 @@ int add_region(struct tyche_encl_add_region_t* region)
     // CASES WHERE: e_reg is on the left.
 
     // Too far in the list already and no merge.
-    if (reg_iter->start > e_reg->end || (reg_iter->start == e_reg->end && reg_iter->tpe != e_reg->tpe)) {
+    if (reg_iter->start > e_reg->end 
+        || (reg_iter->start == e_reg->end && 
+          (reg_iter->tpe != e_reg->tpe || reg_iter->flags != e_reg->flags))) {
       prev = reg_iter;
       break;
     }
     
     // Contiguous, we need to merge.
     // The second part of the && is redundant but makes code more readable.
-    if( reg_iter->start == e_reg->end && reg_iter->tpe == e_reg->tpe) {
+    if( reg_iter->start == e_reg->end
+        && reg_iter->tpe == e_reg->tpe 
+        && reg_iter->flags == e_reg->flags) {
       reg_iter->start = e_reg->start;
       kfree(e_reg);
       e_reg = NULL;
@@ -196,14 +200,17 @@ int add_region(struct tyche_encl_add_region_t* region)
    
     // Safely skip this entry.
     if (reg_iter->end < e_reg->start ||
-      (reg_iter->end == e_reg->start && reg_iter->tpe != e_reg->tpe)) {
+      (reg_iter->end == e_reg->start 
+       && (reg_iter->tpe != e_reg->tpe || reg_iter->flags != e_reg->flags))) {
       goto next;
     }
 
     // We need to merge and have no guarantee that the next region does not
     // overlap.
     // Once again, the tpe check is redundant and is for readabilitty.
-    if (reg_iter->end == e_reg->start && reg_iter->tpe == e_reg->tpe) {
+    if (reg_iter->end == e_reg->start 
+        && reg_iter->tpe == e_reg->tpe
+        && reg_iter->flags == e_reg->flags) {
       struct region_t* next = reg_iter->list.next;
       // There is an overlap with the next element.
       // We cannot add the region to the list.
@@ -276,12 +283,11 @@ failure:
 }
 
 /// Adds a physical range to an enclave region.
-/// This function keeps the list of region.pas sorted and attempts to merge
-/// pas whenever possible. As a result, the pa_region might get freed and nullified. 
-/// @COMMENT: The checks on the tpe are useless for now (as the tpe are always supposed to be the same).
-/// I keep them just in case I manage to make this function reusable for other lists.
+/// It is important that this function does not change the order in which 
+/// physical regions are added as this should correspond to the order in which
+/// we walk through them to build the new cr3 later on.
+/// There is absolutely no merging here.
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
-  struct pa_region_t* prev = NULL;
   struct pa_region_t* curr = NULL;
   
   // Easy case, the list is empty.
@@ -290,66 +296,14 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
     return 0;
   }
 
-  // Attempt to find a position in the list, handle merges
+  // Check there is no overlap. 
   for(curr = region->pas.head; curr != NULL;) {
     // Safety check first.
     if (overlap(curr->start, curr->end, (*pa_region)->start, (*pa_region)->end)) {
       return -1;
     }
-
-    // CASES WHERE: pa_region is on the left.
-
-    // Too far in the list already.
-    if (curr->start > (*pa_region)->end ||
-        (curr->start == (*pa_region)->end && curr->tpe != (*pa_region)->tpe)) {
-      prev = curr;
-      break;
-    }
-    
-    // Contiguous, we are about to have some merging to do.
-    if (curr->start == (*pa_region)->end && curr->tpe == (*pa_region)->tpe) {
-      curr->start = (*pa_region)->start;
-      kfree(*pa_region);
-      *pa_region = NULL;
-      prev = NULL;
-      break;
-    }
-
-    // CASES WHERE: pa_region is on the right
-
-    // Safely skip.
-    if (curr->end < (*pa_region)->start ||
-      (curr->end == (*pa_region)->start && curr->tpe != (*pa_region)->tpe)) {
-      goto next;
-    }
-
-    // We need to merge, but have no guarantee that the next region does not
-    // overlap.
-    if (curr->end == (*pa_region)->start && curr->tpe == (*pa_region)->tpe) {
-      struct pa_region_t* next = curr->list.next;
-      if (next != NULL && overlap(curr->start, (*pa_region)->end, next->start, next->end)) {
-        return -1;
-      }
-      (*pa_region)->start = curr->start;
-      dll_remove(&region->pas, curr, list);
-      kfree(curr);
-      break;
-    } 
-
-next:
-    prev = curr;
-    curr = curr->list.next;
   }
-  // The region has been merged.
-  if (*pa_region == NULL) {
-    goto done;
-  }
-  if (prev != NULL) {
-    dll_add_after(&region->pas, *pa_region, list, prev); 
-  }
-  if (prev == NULL) {
-    dll_add_first(&region->pas, *pa_region, list);
-  }
-done: 
+  // All good, we add at the tail of the list.
+  dll_add(&region->pas, *pa_region, list);
   return 0;
 }
