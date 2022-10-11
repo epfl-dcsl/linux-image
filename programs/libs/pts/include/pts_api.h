@@ -39,6 +39,7 @@ typedef unsigned int index_t;
 /// How we abstract an entry.
 typedef addr_t entry_t;
 
+/// Possible result for a callback.
 typedef enum {
   // The invocation requires to keep walking the subtree.
   WALK = 0,
@@ -48,6 +49,8 @@ typedef enum {
   MAP = 2,
   // The invocation wants to skip walking the subtree.
   SKIP = 3,
+  // Report Error
+  ERROR = 4,
 } callback_action_t;
 
 /// Forward declaration

@@ -60,6 +60,8 @@ int pt_walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt
       case WALK:
         goto walk;
         break;
+      case ERROR:
+        return -1;
       default:
         TEST(0);
         break;
@@ -78,6 +80,8 @@ map:
         case SKIP:
           continue;
           break;
+        case ERROR:
+          return -1;
         // Should never happen.
         case MAP:
         default:
@@ -98,6 +102,8 @@ visit:
         case SKIP:
           continue;
           break;
+        case ERROR:
+          return -1;
         default:
           TEST(0);
           break;
