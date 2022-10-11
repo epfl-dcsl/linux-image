@@ -72,7 +72,7 @@ callback_action_t default_mapper(entry_t* entry, level_t lvl, struct pt_profile_
       // Do huge mapping only if possible. 
     case PT_PML4:
       // Easy case, just map the entry.
-       new_page = profile->allocate(NULL);
+       new_page = profile->allocate(profile->extras);
       *entry = (((entry_t)new_page) &PT_PHYS_PAGE_MASK) | info->intermed_flags;
       return WALK;
     case PT_PTE:
@@ -88,8 +88,12 @@ static int map_region(struct region_t* region, pt_profile_t* profile) {
     return -1;
   }
   info = (map_info_t*)(profile->extras);
-  //TODO set the flags now!
-  //TODO set extra info in the profile.
+  info->region = region;
+  // Technically we should walk the physical page 
+  // exactly in the same way we collected them.
+  info->pa_region = region->pas.head;
+  // Default flags for intermediary level mappings.
+  info->intermed_flags = PT_PP | PT_RW | PT_ACC | PT_NX;
   return pt_walk_page_range(info->cr3, PT_PML4, region->start, region->end, profile);
 }
 
@@ -100,7 +104,8 @@ int build_enclave_cr3(struct enclave_t* encl) {
   map_info_t info = {
     .cr3 = 0,
     .intermed_flags = 0,
-    .entry_flags = 0,
+    .region = NULL,
+    .pa_region = NULL,
     .profile = &profile, 
     .enclave = encl,
   };
@@ -109,6 +114,9 @@ int build_enclave_cr3(struct enclave_t* encl) {
   profile.va_to_pa = va_to_pa;
   profile.extras = (void*) &info;
   profile.how = x86_64_how_map; 
+
+  // Allocate the root.
+  info.cr3 = (entry_t) allocate(&info);
 
   // The mappers.
   profile.mappers[PT_PTE] = default_mapper;

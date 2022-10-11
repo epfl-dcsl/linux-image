@@ -9,10 +9,13 @@ typedef struct map_info_t {
   entry_t cr3;
   // Intermediary flags to be used in the page tables.
   entry_t intermed_flags;
-  // The entry we want for this flag. (Not sure it is needed here);
-  entry_t entry_flags;
-
+  // The region we are currently mapping.
+  struct region_t* region;
+  // A pointer to the current physical page to use.
+  struct pa_region_t* pa_region;
+  // A backward edge to the current profile.
   pt_profile_t* profile;
+  // The enclave we are currently handling.
   struct enclave_t* enclave;
 } map_info_t;
 
