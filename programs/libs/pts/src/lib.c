@@ -6,18 +6,23 @@ static index_t get_index(addr_t addr, level_t level, pt_profile_t* profile)
   return ((addr & profile->masks[level]) >> profile->shifts[level]);
 }
 
-int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_profile_t* profile)
+int pt_walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_profile_t* profile)
 {
+  entry_t next = 0;
+  addr_t curr_va = 0;
+  index_t s = 0;
+  entry_t* va_root = 0;
+  index_t i = 0;
   TEST(start < end); 
   TEST(profile != 0);
   TEST(level < profile->nb_levels); 
   TEST(profile->how != 0);
   TEST(profile->pa_to_va != 0);
-  entry_t next = 0;
-  addr_t curr_va = start;
-  index_t s = get_index(start, level, profile);
-  entry_t* va_root = (entry_t*) profile->pa_to_va(root);
-  for (index_t i = s; i < profile->nb_entries; i++) {
+  next = 0;
+  curr_va = start;
+  s = get_index(start, level, profile);
+  va_root = (entry_t*) profile->pa_to_va(root);
+  for (i = s; i < profile->nb_entries; i++) {
     // Compute the current virtual address.
     curr_va = (start & ~(profile->masks[level])) 
         | (((addr_t)i) << profile->shifts[level]);
@@ -31,6 +36,11 @@ int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_pr
     if (curr_va >= end) {
       break;
     }
+
+    // Drop the address into the profile in case it is needed.
+    // This avoids passing it around.
+    profile->curr_va = curr_va;
+
     // Decide what to do first.
     // We can either MAP -> WALK -> VISIT
     switch(profile->how(&(va_root[i]), level, profile)) {
@@ -100,10 +110,12 @@ walk:
     } 
     // Next level page table (PA) to visit.
     next = profile->next(va_root[i], level);
-    if (walk_page_range(next, level-1, curr_va, end, profile) == -1) {
+    if (pt_walk_page_range(next, level-1, curr_va, end, profile) == -1) {
       TEST(0);
       return -1; 
     }
   }
+  // Reset the profile curr_va
+  profile->curr_va = 0;
   return 0;
 }

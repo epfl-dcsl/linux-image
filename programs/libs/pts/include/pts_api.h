@@ -31,7 +31,7 @@
 typedef unsigned long long addr_t;
 
 /// Cover the level with a typedef in case we need to change that.
-typedef char level_t;
+typedef unsigned char level_t;
 
 /// Cover the index with a typedef in case we need to change that.
 typedef unsigned int index_t;
@@ -106,10 +106,14 @@ typedef struct pt_profile_t {
   // Whatever the user wants.
   void* extras;
 
+  // The current va set before making a call.
+  // This is written by the library but never read.
+  addr_t curr_va;
+
 } pt_profile_t;
 
 /// Goes through a range of VAs using the profile.
 /// Returns -1 in case of an error, 0 if success.
-int walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_profile_t* profile);
+int pt_walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_profile_t* profile);
 
 #endif

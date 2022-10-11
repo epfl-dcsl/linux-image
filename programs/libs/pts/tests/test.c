@@ -134,7 +134,7 @@ void test_simple_map(pt_profile_t* profile)
   TEST(extra!=NULL);
   entry_t* root = profile->allocate(NULL); 
   extra->root = (entry_t) root;
-  TEST(walk_page_range((entry_t) root, PT_PML4, s, e, profile) == 0);
+  TEST(pt_walk_page_range((entry_t) root, PT_PML4, s, e, profile) == 0);
   // Check that we mapped 3 ptes
   TEST(extra->invoc_count == 3);
   LOG("Done mapping.");
@@ -143,7 +143,7 @@ void test_simple_map(pt_profile_t* profile)
   extra->invoc_count = 0;
   profile->how = x86_64_how_visit_leaves; 
   profile->visitors[PT_PTE] = pte_page_visit;
-  TEST(walk_page_range((entry_t) root, PT_PML4, s, e, profile) == 0);
+  TEST(pt_walk_page_range((entry_t) root, PT_PML4, s, e, profile) == 0);
   TEST(extra->invoc_count == 3);
   LOG("Done walking.")
 }
@@ -159,14 +159,14 @@ void test_boundary_map(pt_profile_t* profile)
   virt_addr_t end = {1, 0, 1, 2};
   addr_t s = create_virt_addr(start);
   addr_t e = create_virt_addr(end);
-  TEST(walk_page_range(extra->root, PT_PML4, s, e, profile) == 0); 
+  TEST(pt_walk_page_range(extra->root, PT_PML4, s, e, profile) == 0); 
   TEST(extra->invoc_count == 4);
   LOG("Done mapping over a boundary");
 
   // Now read them.
   extra->invoc_count = 0;
   profile->how = x86_64_how_visit_leaves;
-  TEST(walk_page_range(extra->root, PT_PML4, s, e, profile) == 0);
+  TEST(pt_walk_page_range(extra->root, PT_PML4, s, e, profile) == 0);
   TEST(extra->invoc_count == 4);
   LOG("Done walking over a boundary");
 }
