@@ -37,7 +37,6 @@ callback_action_t x86_64_how_map(entry_t* entry, level_t level, pt_profile_t* pr
 
 index_t x86_64_get_index(addr_t addr, level_t level, pt_profile_t* profile)
 {
-  index_t idx = 0;
   // Clear the address
   addr = addr & PT_VIRT_PAGE_MASK;
   TEST(level <= x86_64_LEVELS);
