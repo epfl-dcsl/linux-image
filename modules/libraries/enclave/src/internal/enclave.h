@@ -53,14 +53,14 @@ struct enclave_t {
   /// Unique enclave identifier
   tyche_encl_handle_t handle;
 
-  /// TODO add the physical value of cr3.
-  /// TODO add the virtual value of cr3 (the root page).
-
-  /// List of pages used by page tables.
-  dll_list(struct pa_region_t, pts);
+  /// The enclave's physical value of cr3.
+  uint64_t cr3;
 
   /// Enclaves belong to a list.
   dll_elem(struct enclave_t, list);
+
+  /// List of pages used by page tables.
+  dll_list(struct pa_region_t, pts);
 
   /// List of regions that belong to this enclave.
   dll_list(struct region_t, regions);

@@ -104,6 +104,7 @@ int tyche_enclave_open(struct inode *inode, struct file *file)
 
 long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+  tyche_encl_handle_t encl;
   struct tyche_encl_create_t handle;
   struct tyche_encl_add_region_t region;
   switch(cmd)
@@ -144,7 +145,13 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         return -1;
       }
       break;
-
+    case TYCHE_ENCLAVE_COMMIT:
+      encl = (tyche_encl_handle_t) arg;
+      if (commit_enclave(encl) == -1) {
+        pr_err("[TE]: Failed to commit the enclave!\n");
+        return -1;
+      } 
+      break;
     default:
       pr_err("[TE]: Wrong command for tyche enclave driver.\n");
       return -1;

@@ -5,8 +5,6 @@
 #include "x86_64_pt.h"
 
 typedef struct map_info_t {
-  // The enclave's root cr3.
-  entry_t cr3;
   // Intermediary flags to be used in the page tables.
   entry_t intermed_flags;
   // The region we are currently mapping.

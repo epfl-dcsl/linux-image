@@ -72,6 +72,8 @@
     if ((list)->tail == (elem)) {                       \
       (list)->tail = (elem)->name.prev;                 \
     }                                                   \
+    (elem)->name.next = NULL;                           \
+    (elem)->name.prev = NULL;                           \
   } while (0);
 
 #endif

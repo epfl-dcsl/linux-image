@@ -89,6 +89,13 @@ void test_add_invalid_overlap(int fd, tyche_encl_handle_t* h) {
   TEST(value == -1, "Overlap accepted.");
 }
 
+void test_commit_enclave(int fd, tyche_encl_handle_t h)
+{
+  LOG("Attempting to commit an enclave");
+  int value = ioctl(fd, TYCHE_ENCLAVE_COMMIT, h);
+  TEST(value == 0, "Could not commit");
+}
+
 int main(void)
 {
   LOG("Testing tyche enclave ioctl driver");
@@ -104,7 +111,7 @@ int main(void)
   //test_add_invalid_range(fd, &(h1.handle));
   test_add_valid_range(fd, &(h1.handle));
   test_add_invalid_overlap(fd, &(h1.handle));
-
+  test_commit_enclave(fd, h1.handle);
 done:
   LOG("All done!");
   close(fd);

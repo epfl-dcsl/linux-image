@@ -1,6 +1,8 @@
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
+#include <asm/io.h>
 #include "enclave.h"
 #include "mapper.h"
 #include "process.h"
@@ -254,10 +256,17 @@ failure:
 /// For now, keep it this way to ease debugging and readability.
 int commit_enclave(tyche_encl_handle_t handle)
 {
+  void * ptr = NULL;
   struct enclave_t* encl = NULL; 
   struct region_t* region = NULL;
+  struct pa_region_t* pa_region = NULL;
   encl = find_enclave(handle);
   if (encl == NULL) {
+    return -1;
+  }
+
+  if (encl->pid != current->pid) {
+    pr_err("[TE]: The enclave cannot be commited by another pid.\n");
     return -1;
   }
 
@@ -273,12 +282,25 @@ int commit_enclave(tyche_encl_handle_t handle)
   }
   return 0;
 
-  //TODO check for overlaps.
+  // TODO Add all the pages to the enclave all_pages list.
+  // At the same time, check for overlaps.
 failure:
   // Delete all the pas.
   dll_foreach(&(encl->regions), region, list) {
     delete_region_pas(region);
   }
+  // Delete the enclave page tables.
+  for (pa_region = encl->pts.head; pa_region != NULL; ) {
+    struct pa_region_t* tmp = pa_region;
+    pa_region = pa_region->list.next;
+    dll_remove(&(encl->pts), tmp, list);
+    ptr = phys_to_virt((phys_addr_t)(pa_region->start)); 
+    vfree(ptr);
+    kfree(tmp);
+  }
+  ptr = phys_to_virt((phys_addr_t)(encl->cr3));
+  vfree(ptr);
+  encl->cr3 = 0;
   return -1;
 }
 
@@ -289,6 +311,7 @@ failure:
 /// There is absolutely no merging here.
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
   struct pa_region_t* curr = NULL;
+  dll_init_elem(*pa_region, list);
   
   // Easy case, the list is empty.
   if (dll_is_empty(&region->pas)) {
@@ -297,7 +320,7 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
   }
 
   // Check there is no overlap. 
-  for(curr = region->pas.head; curr != NULL;) {
+  dll_foreach(&(region->pas), curr, list) {
     // Safety check first.
     if (overlap(curr->start, curr->end, (*pa_region)->start, (*pa_region)->end)) {
       return -1;

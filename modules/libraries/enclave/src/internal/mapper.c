@@ -123,12 +123,11 @@ static int map_region(struct region_t* region, pt_profile_t* profile) {
   }
   info = (map_info_t*)(profile->extras);
   info->region = region;
-  // Technically we should walk the physical page 
-  // exactly in the same way we collected them.
+  // We walk the physical page exactly in the same order we collected them.
   info->pa_region = region->pas.head;
   // Default flags for intermediary level mappings.
   info->intermed_flags = PT_PP | PT_RW | PT_ACC | PT_NX;
-  return pt_walk_page_range(info->cr3, PT_PML4, region->start, region->end, profile);
+  return pt_walk_page_range(info->enclave->cr3, PT_PML4, region->start, region->end, profile);
 }
 
 /// Create the tree for the enclave.
@@ -136,7 +135,6 @@ int build_enclave_cr3(struct enclave_t* encl) {
   struct region_t* reg = NULL;
   pt_profile_t profile = x86_64_profile;
   map_info_t info = {
-    .cr3 = 0,
     .intermed_flags = 0,
     .region = NULL,
     .pa_region = NULL,
@@ -150,7 +148,7 @@ int build_enclave_cr3(struct enclave_t* encl) {
   profile.how = x86_64_how_map; 
 
   // Allocate the root.
-  info.cr3 = (entry_t) allocate(&info);
+  encl->cr3 = (uint64_t) allocate(&info);
 
   // The mappers.
   profile.mappers[PT_PTE] = default_mapper;
@@ -165,7 +163,6 @@ int build_enclave_cr3(struct enclave_t* encl) {
       return -1;
     }
   }
-
-  //TODO do we need checks 
+  //TODO do we need checks? 
   return 0;
 }

@@ -51,5 +51,6 @@ struct tyche_encl_add_region_t {
 #define TYCHE_ENCLAVE_DBG _IO('a', 'a')
 #define TYCHE_ENCLAVE_CREATE _IOR('a', 'b', struct tyche_encl_create_t*)
 #define TYCHE_ENCLAVE_ADD_REGION _IOW('a', 'c', struct tyche_encl_add_region_t*)
+#define TYCHE_ENCLAVE_COMMIT _IOW('a', 'd', tyche_encl_handle_t)
 
 #endif
