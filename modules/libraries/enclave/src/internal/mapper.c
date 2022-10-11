@@ -56,29 +56,63 @@ callback_action_t default_mapper(entry_t* entry, level_t lvl, struct pt_profile_
 {
   map_info_t* info = NULL;
   entry_t* new_page = NULL;
+  int is_huge = 0;
+  entry_t size = 0;
   // There is something going wrong.
   if (entry == NULL || profile == NULL || profile->extras == NULL) {
     pr_err("default mapper received a null value.");
-    return SKIP;
+    return ERROR;
   }
   info = (map_info_t*)(profile->extras);
+  if (info->pa_region == NULL) {
+    return ERROR;
+  }
+  size = info->pa_region->end - info->pa_region->start;
   //TODO implement.
   switch(lvl) {
-    // These are the complicated cases.
-    // We want to optimize for Giant and Huge regions, but this is doable
-    // only if we have a contiguous physical region for it.
     case PT_PGD:
+      // We have a huge mapping.
+      if (size == PT_PGD_PAGE_SIZE) {
+        is_huge = 1;
+        goto entry_page; 
+      }
+      // Normal mapping.
+      goto normal_page;
+      break;
     case PT_PMD:
-      // Do huge mapping only if possible. 
+      if (size == PT_PMD_PAGE_SIZE) {
+        is_huge = 1; 
+        goto entry_page;
+      }
+      goto normal_page;
+      break;
     case PT_PML4:
       // Easy case, just map the entry.
-       new_page = profile->allocate(profile->extras);
-      *entry = (((entry_t)new_page) &PT_PHYS_PAGE_MASK) | info->intermed_flags;
-      return WALK;
+      goto normal_page;
     case PT_PTE:
-      //TODO get the page mapping from the mapping.
+      if (size != PT_PAGE_SIZE) {
+        // There is a mismatch.
+        return ERROR;
+      }
+      is_huge = 0;
+      goto entry_page;
       break;
   }
+
+// Mapping a page.
+entry_page:
+  *entry = (info->pa_region->start & PT_PHYS_PAGE_MASK)
+    | info->region->flags;
+  if (is_huge) {
+    *entry |= PT_PAGE_PAT_LARGE;
+  }
+  // Move to the next region.
+  info->pa_region = info->pa_region->list.next;
+  return WALK;
+// Allocating a new entry
+normal_page:
+  new_page = profile->allocate(profile->extras);
+  *entry = (((entry_t)new_page) &PT_PHYS_PAGE_MASK) | info->intermed_flags;
   return WALK;
 }
 
