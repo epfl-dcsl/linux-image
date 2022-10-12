@@ -1,0 +1,14 @@
+all: encl.so
+
+# The folders we depend on.
+ELF_LIB=../elf64
+ENCL_DRIVER=../../../modules/libraries/enclave
+
+# The includes we depend on.
+INCLUDES=-I$(ELF_LIB)/include -I$(ENCL_DRIVER)/include
+
+# Configs for dyn libs.
+ELF_CONFIG= -Wl,-R $(ELF_LIB) -L$(ELF_LIB)
+
+encl.so: src/lib.c
+	gcc $(INCLUDES) -Iinclude/ $(ELF_CONFIG) -shared -o $@ -fPIC $^ -lelf64
