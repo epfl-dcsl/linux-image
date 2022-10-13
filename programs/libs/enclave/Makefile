@@ -13,7 +13,7 @@ ELF_CONFIG= -Wl,-R $(ELF_LIB) -L$(ELF_LIB)
 encl_loader.so: loader/lib.c
 	gcc $(INCLUDES) -Iinclude/ $(ELF_CONFIG) -shared -o $@ -fPIC $^ -lelf64
 
-encl.so: runtime/lib.c
+encl.so: runtime/lib.c runtime/entry.S
 	gcc -Iinclude/ -shared -o $@ -fPIC $^
 
 .PHONY: clean

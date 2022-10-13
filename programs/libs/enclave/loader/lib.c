@@ -9,11 +9,13 @@
 // elf64 library includes.
 #include "elf64.h"
 // local includes.
-#include "encl.h"
+#include "encl_loader.h"
 #include "lib_internal.h"
 
 const char* STACK_SECTION_NAME = ".encl_stack";
 const char* ENCL_DRIVER = "/dev/tyche_enclave"; 
+
+static lib_encl_t* library_plugin = NULL;
 
 static void* mmap_file(const char* file, int* fd)
 {
@@ -181,6 +183,105 @@ fail_close:
 fail:
   return -1;
 }
+
+//TODO change this, replace with a mapping of the lib.
+const lib_encl_t* init_enclave_loader(const char* libencl)
+{
+  if (library_plugin != NULL) {
+    return library_plugin;
+  }
+  int fd = open(libencl, O_RDONLY);
+  if (fd < 0) {
+    goto fail;
+  }
+  Elf64_Ehdr header; 
+  read_elf64_header(fd, &header);
+
+  Elf64_Phdr* segments = NULL;
+  read_elf64_segments(fd, header, &segments);
+  
+  // Find the .text section.
+  Elf64_Shdr* sections = NULL;
+  read_elf64_sections(fd, header, &sections);
+  char* sh_names = read_section64(fd, sections[header.e_shstrndx]); 
+  Elf64_Shdr* text = NULL;
+  int text_idx = -1;
+  Elf64_Phdr* text_seg = NULL;
+  for (int i = 0; i < header.e_shnum; i++) {
+    if (strcmp(".text", sh_names + sections[i].sh_name) == 0) {
+      text = &sections[i];
+      text_idx = i;
+      break;
+    }
+  }
+  free(sh_names);
+  if (!text)
+  {
+    goto fail_close;
+  }
+
+  // Find the correct segment.
+  for (int i = 0; i < header.e_phnum; i++) {
+    if (segments[i].p_offset <= text->sh_offset 
+        && ((segments[i].p_offset +segments[i].p_filesz) >= text->sh_offset + text->sh_size)) {
+      text_seg = &segments[i];
+      break;
+    }
+  } 
+  if(text_seg == NULL) {
+    goto fail_close;
+  }
+  
+  library_plugin = malloc(sizeof(lib_encl_t));
+  if (!library_plugin) {
+    goto fail_close;
+  }
+
+  // Mmap the segment.
+  library_plugin->size = (text_seg->p_memsz) + ((text_seg->p_memsz % text_seg->p_align) != 0) 
+    * (text_seg->p_align - (text_seg->p_memsz % text_seg->p_align));
+  library_plugin->plugin = mmap(NULL, library_plugin->size, PROT_READ|PROT_WRITE,
+      MAP_ANONYMOUS|MAP_PRIVATE|MAP_POPULATE |MAP_FILE, -1, 0);
+  if (library_plugin->plugin == MAP_FAILED) {
+    goto fail_free;
+  }
+
+  // Copy the content
+  if (lseek(fd, text_seg->p_offset, SEEK_SET) != text_seg->p_offset) {
+    goto fail_unmap;
+  }
+
+  if(read(fd, library_plugin->plugin, text_seg->p_filesz) != text_seg->p_filesz) {
+    goto fail_unmap;
+  }
+  
+  // Now mprotect.
+  mprotect(library_plugin->plugin, library_plugin->size, PROT_READ|PROT_EXEC);
+
+  // Now find the gate.
+  Elf64_Sym* gate = find_symbol_in_section(fd, VMCALL_GATE_NAME, header, sections, text_idx);
+  if (gate == NULL) {
+    goto fail_unmap;
+  }
+
+  library_plugin->vmcall_gate = (gate->st_value - text_seg->p_vaddr) + library_plugin->plugin; 
+  
+  free(gate);
+  close(fd);
+  // All good, return the plugin.
+  return library_plugin; 
+
+fail_unmap:
+  munmap(library_plugin->plugin, library_plugin->size);
+fail_free:
+  free(library_plugin);
+  library_plugin = NULL;
+fail_close:
+  close(fd);
+fail:
+  return NULL;
+}
+
 
 int load_enclave(const char* file, tyche_encl_handle_t* handle)
 {
