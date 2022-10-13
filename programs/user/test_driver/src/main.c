@@ -39,6 +39,7 @@ void test_add_invalid_range(int fd, tyche_encl_handle_t* h) {
   struct tyche_encl_add_region_t region = {
     .handle = *h,
     .start = 0x1000,
+    .src = 0x1000,
     .end = 0x2000,
     .flags = TE_READ | TE_USER | TE_WRITE,
     .tpe = Confidential,
@@ -58,6 +59,7 @@ void test_add_valid_range(int fd, tyche_encl_handle_t* h)
    struct tyche_encl_add_region_t region = {
     .handle = *h,
     .start = start,
+    .src = start,
     .end = start + size,
     .flags = TE_READ | TE_USER | TE_WRITE,
     .tpe = Confidential,
@@ -75,6 +77,7 @@ void test_add_invalid_overlap(int fd, tyche_encl_handle_t* h) {
    struct tyche_encl_add_region_t region = {
     .handle = *h,
     .start = start,
+    .src = start,
     .end = start + size,
     .flags = TE_READ | TE_USER | TE_WRITE,
     .tpe = Confidential,
@@ -84,6 +87,7 @@ void test_add_invalid_overlap(int fd, tyche_encl_handle_t* h) {
   
   // Now try to map an invalid range with an overlap.
   region.start = start + 0x1000;
+  region.src = start + 0x1000;
   region.end = start + 0x2000;
   value = ioctl(fd, TYCHE_ENCLAVE_ADD_REGION, &region);
   TEST(value == -1, "Overlap accepted.");

@@ -80,6 +80,20 @@ fail:
   return -1;
 }
 
+static uint64_t translate_elf_flags(Elf64_Word flags) {
+  uint64_t result = 0;
+  if (flags & PF_X) {
+    result |= TE_EXEC; 
+  }
+  if (flags & PF_W) {
+    result |= TE_WRITE;
+  }
+  if (flags & PF_R) {
+    result |= TE_READ;
+  }
+  return result;
+}
+
 static int create_enclave(load_encl_t* enclave)
 {
   enclave->driver_fd = open(ENCL_DRIVER, O_RDWR);
@@ -112,6 +126,7 @@ static int create_enclave(load_encl_t* enclave)
   // Load each segment.
   for (int i = 0; i < enclave->header.e_phnum; i++) {
     Elf64_Phdr segment = enclave->segments[i]; 
+    uint64_t flags = 0;
 
     // Non-loadable segments are ignored.
     if (segment.p_type != PT_LOAD) {
@@ -129,10 +144,23 @@ static int create_enclave(load_encl_t* enclave)
 
     // Copy the content from file  + offset.
     memcpy(enclave->mappings[i],
-        enclave->elf_content + enclave->segments[i].p_offset,
-        enclave->segments[i].p_filesz);
+        enclave->elf_content + segment.p_offset, segment.p_filesz);
+    
+    // Translate the flags.
+    flags = translate_elf_flags(segment.p_flags);
+    struct tyche_encl_add_region_t region = {
+      .handle = enclave->handle,
+      .start = segment.p_vaddr, //TODO this will depend on the elf type.
+      .end = segment.p_vaddr + segment.p_memsz,
+      .src = (uint64_t)enclave->mappings[i],
+      .flags = flags,
+      .tpe = Confidential,
+    };
 
     // Call the driver with segment.p_vaddr, p_vaddr + pmemsz, p_flags
+    if(ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
+      goto fail_unmap;
+    }
   }
   // Everything went well.
   return 0;

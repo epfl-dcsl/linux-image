@@ -25,6 +25,9 @@ struct region_t {
   /// End address. Must be page aligned.
   uint64_t end;
 
+  /// Source address from the parent address space. Must be page aligned.
+  uint64_t src;
+
   /// Protection flags (RWXU) for this region.
   uint64_t flags;
 

@@ -40,6 +40,9 @@ struct tyche_encl_add_region_t {
   /// End address. Must be page aligned.
   uint64_t end;
 
+  /// Source for the content of the region.
+  uint64_t src;
+
   /// Protection flags (RWXU) for this region.
   uint64_t flags;
 

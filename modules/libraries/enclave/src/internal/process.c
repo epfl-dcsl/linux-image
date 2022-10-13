@@ -134,7 +134,8 @@ int walk_and_collect_region(struct region_t* region) {
     .pte_hole = pte_hole,
   };
   struct walker_info_t info = {region, 1};
-
-  walk_page_range_prox(current->mm, region->start, region->end, &ops, &info); 
+  
+  uint64_t end = region->src + (region->end - region->start);
+  walk_page_range_prox(current->mm, region->src, end, &ops, &info); 
   return !(info.success);
 }

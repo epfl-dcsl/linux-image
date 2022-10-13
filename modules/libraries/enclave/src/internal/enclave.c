@@ -38,7 +38,7 @@ static int region_check(struct tyche_encl_add_region_t* region)
     goto failure;
   }
   // Check alignment.
-  if (region->start % PAGE != 0 || region->end % PAGE != 0) {
+  if (region->start % PAGE != 0 || region->end % PAGE != 0 || region->src % PAGE != 0) {
     goto failure;
   }
 
@@ -163,6 +163,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   }
   e_reg->start = region->start;
   e_reg->end = region->end;
+  e_reg->src = region->src;
   e_reg->flags = region->flags;
   e_reg->tpe = region->tpe;
   dll_init_list(&e_reg->pas);
@@ -186,12 +187,14 @@ int add_region(struct tyche_encl_add_region_t* region)
       break;
     }
     
-    // Contiguous, we need to merge.
+    // Contiguous, we merge only if the src is also contiguous.
     // The second part of the && is redundant but makes code more readable.
     if( reg_iter->start == e_reg->end
+        && reg_iter->src == (e_reg->src + (e_reg->end - e_reg->start)) 
         && reg_iter->tpe == e_reg->tpe 
         && reg_iter->flags == e_reg->flags) {
       reg_iter->start = e_reg->start;
+      reg_iter->src = e_reg->src;
       kfree(e_reg);
       e_reg = NULL;
       prev = NULL;
@@ -211,6 +214,7 @@ int add_region(struct tyche_encl_add_region_t* region)
     // overlap.
     // Once again, the tpe check is redundant and is for readabilitty.
     if (reg_iter->end == e_reg->start 
+        && e_reg->src == (reg_iter->src + (reg_iter->end - reg_iter->start)) 
         && reg_iter->tpe == e_reg->tpe
         && reg_iter->flags == e_reg->flags) {
       struct region_t* next = reg_iter->list.next;
@@ -221,6 +225,7 @@ int add_region(struct tyche_encl_add_region_t* region)
       }
       // Merge and remove.
       e_reg->start = reg_iter->start;
+      e_reg->src = reg_iter->start;
       dll_remove(&(encl->regions), reg_iter, list);
       kfree(reg_iter);
       break;
