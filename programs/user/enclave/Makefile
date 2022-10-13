@@ -1,5 +1,10 @@
-all: enclave.so
+all: enclave 
 
-enclave.so: trusted/lib.c
-	gcc -nostdlib -shared -o trusted.so -fPIC trusted/lib.c
+enclave: trusted/main.c
+	gcc -g -nostdlib -static -o $@ $<
+
+.PHONY: clean
+
+clean:
+	rm enclave
 
