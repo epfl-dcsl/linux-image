@@ -182,7 +182,7 @@ fail:
   return -1;
 }
 
-int load_enclave(const char* file)
+int load_enclave(const char* file, tyche_encl_handle_t* handle)
 {
   load_encl_t enclave = {
     .driver_fd = 0,
@@ -191,6 +191,9 @@ int load_enclave(const char* file)
     .segments = NULL,
     .stack_section = NULL,
   };
+  if (handle == NULL) {
+    goto fail;
+  }
   // mmap the file in memory.
   enclave.elf_content = mmap_file(file, &(enclave.elf_fd));
   if (enclave.elf_content == NULL || enclave.elf_fd == -1) {
@@ -198,15 +201,17 @@ int load_enclave(const char* file)
   }
 
   // Parse the ELF file.
-  if (parse_elf(&enclave) == -1) {
+  if (parse_elf(&enclave) != 0) {
     goto fail_close;
   }
 
   // Create the enclave.
-  if (create_enclave(&enclave) == -1) {
+  if (create_enclave(&enclave) != 0) {
     goto fail_free; 
   }
   
+  // Setup the handle.
+  *handle = enclave.handle; 
   return 0;
 fail_free:
   free(enclave.sections);
