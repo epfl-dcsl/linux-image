@@ -84,7 +84,7 @@ fail:
 }
 
 static uint64_t translate_elf_flags(Elf64_Word flags) {
-  uint64_t result = 0;
+  uint64_t result = TE_USER;
   if (flags & PF_X) {
     result |= TE_EXEC; 
   }
@@ -97,7 +97,7 @@ static uint64_t translate_elf_flags(Elf64_Word flags) {
   return result;
 }
 
-static int create_enclave(load_encl_t* enclave)
+static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
 {
   enclave->driver_fd = open(ENCL_DRIVER, O_RDWR);
   if (enclave->driver_fd < 0) {
@@ -133,7 +133,7 @@ static int create_enclave(load_encl_t* enclave)
       .start = (uint64_t)library_plugin->plugin,
       .end = ((uint64_t)(library_plugin->plugin)) + library_plugin->size,
       .src = (uint64_t)library_plugin->plugin,
-      .flags = TE_READ|TE_EXEC,
+      .flags = TE_READ|TE_EXEC|TE_USER,
       .tpe = Shared,
     };
 
@@ -142,6 +142,17 @@ static int create_enclave(load_encl_t* enclave)
     }
 
   } while(0);
+  
+  // Add the extras too.
+  do {
+    struct tyche_encl_add_region_t* curr = NULL;
+    for (curr = extras; curr != NULL; curr = (struct tyche_encl_add_region_t*)curr->extra) {
+      if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, curr) !=0) {
+        goto fail_free;
+      }
+    }
+  } while(0);
+  
 
   // Load each segment.
   for (int i = 0; i < enclave->header.e_phnum; i++) {
@@ -301,7 +312,9 @@ fail:
 }
 
 
-int load_enclave(const char* file, tyche_encl_handle_t* handle)
+int load_enclave( const char* file,
+                  tyche_encl_handle_t* handle,
+                  struct tyche_encl_add_region_t* extras)
 {
   // You need to initialize the library_plugin
   if (!library_plugin) {
@@ -329,7 +342,7 @@ int load_enclave(const char* file, tyche_encl_handle_t* handle)
   }
 
   // Create the enclave.
-  if (create_enclave(&enclave) != 0) {
+  if (create_enclave(&enclave, extras) != 0) {
     goto fail_free; 
   }
   

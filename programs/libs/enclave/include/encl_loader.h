@@ -29,7 +29,8 @@ typedef struct lib_encl_t {
 /// The libencl will be mapped by default in all the enclaves.
 const lib_encl_t* init_enclave_loader(const char* libencl);
 
-/// Load the enclave defined by the file path.
-int load_enclave(const char* file, tyche_encl_handle_t* handle);
+/// Load the enclave defined by the file path, add the extras regions to it,
+/// store the resulting handle in the pprovided pointer.
+int load_enclave(const char* file, tyche_encl_handle_t* handle, struct tyche_encl_add_region_t* extras);
 
 #endif

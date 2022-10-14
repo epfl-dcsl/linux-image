@@ -1,1 +1,3 @@
-trusted.so
+*.out
+enclave
+libs

@@ -48,6 +48,10 @@ struct tyche_encl_add_region_t {
 
   /// Type of mapping: Confidential or Shared.
   enum tyche_encl_mapping_t tpe;
+
+  /// Not read by the module, but can be used by user level libraries for
+  /// extra information.
+  void* extra;
 };
 
 // ——————————————————————————— Tyche Enclave IOCTL API —————————————————————— //
