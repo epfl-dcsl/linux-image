@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stddef.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -124,6 +125,23 @@ static int create_enclave(load_encl_t* enclave)
   for (int i = 0; i < enclave->header.e_phnum; i++) {
     enclave->mappings[i] = NULL;
   }
+
+  // Add the encl.so to the enclave.
+  do {
+    struct tyche_encl_add_region_t region = {
+      .handle = enclave->handle,
+      .start = (uint64_t)library_plugin->plugin,
+      .end = ((uint64_t)(library_plugin->plugin)) + library_plugin->size,
+      .src = (uint64_t)library_plugin->plugin,
+      .flags = TE_READ|TE_EXEC,
+      .tpe = Shared,
+    };
+
+    if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
+      goto fail_free;
+    }
+
+  } while(0);
 
   // Load each segment.
   for (int i = 0; i < enclave->header.e_phnum; i++) {
@@ -285,6 +303,10 @@ fail:
 
 int load_enclave(const char* file, tyche_encl_handle_t* handle)
 {
+  // You need to initialize the library_plugin
+  if (!library_plugin) {
+    goto fail;
+  }
   load_encl_t enclave = {
     .driver_fd = 0,
     .elf_fd = 0,
