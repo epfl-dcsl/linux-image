@@ -36,27 +36,33 @@ fail:
 static int region_check(struct tyche_encl_add_region_t* region)
 {
   if (region == NULL) {
+    printk(KERN_NOTICE "[TE]: null region.\n");
     goto failure;
   }
   // Check alignment.
   if (region->start % PAGE != 0 || region->end % PAGE != 0 || region->src % PAGE != 0) {
+    printk(KERN_NOTICE "[TE]: start, end or src not page aligned (%llx - %llx - %llx).\n", region->start, region->end, region->src);
     goto failure;
   }
 
   // Check ordering
   if (!(region->start < region->end)) {
+    printk(KERN_NOTICE "[TE]: start >= end.\n");
     goto failure;
   }
 
   // Check access rights, we do not allow execute with write.
   if (region->flags == 0) {
+    printk(KERN_NOTICE "[TE]: missing flags in region.\n");
     goto failure;
   }
   if ((region->flags & TE_EXEC) && (region->flags & TE_WRITE)) {
+    printk(KERN_NOTICE "[TE]: region is both exec and write.\n");
     goto failure;
   }
 
-  if (region->tpe != Confidential && region->tpe != Shared) {
+  if (region->tpe != Confidential && region->tpe != Shared && region->tpe != PtEntry) {
+    printk(KERN_NOTICE "[TE]: unknown region type.\n");
     goto failure;
   }
 

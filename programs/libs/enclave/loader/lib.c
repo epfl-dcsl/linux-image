@@ -183,12 +183,11 @@ static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* 
     struct tyche_encl_add_region_t region = {
       .handle = enclave->handle,
       .start = segment.p_vaddr, //TODO this will depend on the elf type.
-      .end = segment.p_vaddr + segment.p_memsz,
+      .end = segment.p_vaddr + enclave->sizes[i],
       .src = (uint64_t)enclave->mappings[i],
       .flags = flags,
       .tpe = Confidential,
     };
-
     // Call the driver with segment.p_vaddr, p_vaddr + pmemsz, p_flags
     if(ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
       goto fail_unmap;
