@@ -11,8 +11,8 @@ int tyche_domain_create(struct enclave_t* encl)
   asm volatile(
       "movq %2, %%rax\n\t"
       "vmcall\n\t"
-      "movq %%rax, %1\n\t"
-      "movq %%rcx, %0"
+      "movq %%rax, %0\n\t"
+      "movq %%rcx, %1"
       : "=rm"(result), "=rm"(handle)
       : "r"((uint64_t)(TYCHE_DOMAIN_CREATE))
       : "rax", "rcx", "memory");
