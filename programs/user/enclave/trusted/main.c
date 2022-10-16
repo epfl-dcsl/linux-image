@@ -1,6 +1,9 @@
 const char* message = "Hello world!\n\0";
 
 
+char encl_stack[0x4000] __attribute__((section(".encl_stack")));
+
+
 // Puts hello world inside the shared dest buffer.
 void trusted_entry(void* dest)
 {

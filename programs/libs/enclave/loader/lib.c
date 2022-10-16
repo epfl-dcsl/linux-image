@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -53,7 +54,6 @@ static int parse_elf(load_encl_t* encl)
     return -1;
   }
   // Header
-  Elf64_Ehdr header; 
   read_elf64_header(encl->elf_fd, &(encl->header));
   
   // Segments to map.
@@ -63,7 +63,7 @@ static int parse_elf(load_encl_t* encl)
   // Later we can use that part to divide kernel vs. user code too.
   read_elf64_sections(encl->elf_fd, encl->header, &(encl->sections));
   char *sh_names = read_section64(encl->elf_fd, encl->sections[encl->header.e_shstrndx]); 
-  for (int i = 0; i < header.e_shnum; i++) {
+  for (int i = 0; i < encl->header.e_shnum; i++) {
     if (strcmp(sh_names + encl->sections[i].sh_name, STACK_SECTION_NAME) == 0) {
       encl->stack_section = &(encl->sections[i]);
       break;
@@ -71,8 +71,9 @@ static int parse_elf(load_encl_t* encl)
   }
   free(sh_names);
   sh_names = NULL;
-  // Failure? 
+  // Do this the clean way. For now, let's just have a variable. 
   if(encl->stack_section == NULL) {
+    fprintf(stderr, "[encl_loader]: no stack section.\n");
     goto fail;
   }
   // All went well
@@ -221,6 +222,7 @@ const lib_encl_t* init_enclave_loader(const char* libencl)
   }
   int fd = open(libencl, O_RDONLY);
   if (fd < 0) {
+    fprintf(stderr, "[encl_loader]: Unable to open libencl '%s'.\n", libencl);
     goto fail;
   }
   Elf64_Ehdr header; 
@@ -246,6 +248,7 @@ const lib_encl_t* init_enclave_loader(const char* libencl)
   free(sh_names);
   if (!text)
   {
+    fprintf(stderr, "[encl_loader]: unable to find text section in libencl.\n");
     goto fail_close;
   }
 
@@ -258,11 +261,13 @@ const lib_encl_t* init_enclave_loader(const char* libencl)
     }
   } 
   if(text_seg == NULL) {
+    fprintf(stderr, "[encl_loader]: no text segment found.\n");
     goto fail_close;
   }
   
   library_plugin = malloc(sizeof(lib_encl_t));
   if (!library_plugin) {
+    fprintf(stderr, "[encl_loader]: library allocation failed.\n");
     goto fail_close;
   }
 
@@ -272,15 +277,18 @@ const lib_encl_t* init_enclave_loader(const char* libencl)
   library_plugin->plugin = mmap(NULL, library_plugin->size, PROT_READ|PROT_WRITE,
       MAP_ANONYMOUS|MAP_PRIVATE|MAP_POPULATE |MAP_FILE, -1, 0);
   if (library_plugin->plugin == MAP_FAILED) {
+    fprintf(stderr, "[encl_loader]: mapping plugin failed.\n");
     goto fail_free;
   }
 
   // Copy the content
   if (lseek(fd, text_seg->p_offset, SEEK_SET) != text_seg->p_offset) {
+    fprintf(stderr, "[encl_loader]: seeking text segment offset failed.\n");
     goto fail_unmap;
   }
 
   if(read(fd, library_plugin->plugin, text_seg->p_filesz) != text_seg->p_filesz) {
+    fprintf(stderr, "[encl_loader]: reading text segment failed.\n");
     goto fail_unmap;
   }
   
@@ -288,8 +296,9 @@ const lib_encl_t* init_enclave_loader(const char* libencl)
   mprotect(library_plugin->plugin, library_plugin->size, PROT_READ|PROT_EXEC);
 
   // Now find the gate.
-  Elf64_Sym* gate = find_symbol_in_section(fd, VMCALL_GATE_NAME, header, sections, text_idx);
+  Elf64_Sym* gate = find_symbol(fd, VMCALL_GATE_NAME, header, sections);
   if (gate == NULL) {
+    fprintf(stderr, "[encl_loader]: no gate found.\n");
     goto fail_unmap;
   }
 
@@ -318,6 +327,7 @@ int load_enclave( const char* file,
 {
   // You need to initialize the library_plugin
   if (!library_plugin) {
+    fprintf(stderr, "[encl_loader]: library_plugin is null.\n");
     goto fail;
   }
   load_encl_t enclave = {
@@ -333,16 +343,19 @@ int load_enclave( const char* file,
   // mmap the file in memory.
   enclave.elf_content = mmap_file(file, &(enclave.elf_fd));
   if (enclave.elf_content == NULL || enclave.elf_fd == -1) {
+    fprintf(stderr, "[encl_loader]: mmap of enclave failed.\n");
     goto fail; 
   }
 
   // Parse the ELF file.
   if (parse_elf(&enclave) != 0) {
+    fprintf(stderr, "[encl_loader]: unable to parse enclave.\n");
     goto fail_close;
   }
 
   // Create the enclave.
   if (create_enclave(&enclave, extras) != 0) {
+    fprintf(stderr, "[encl_loader]: create enclave failure.\n");
     goto fail_free; 
   }
   

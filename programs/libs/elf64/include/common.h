@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TEST(cond)                                                   \
-  do {                                                               \
-    if (!(cond)) {                                                   \
-      fprintf(stderr, "[%s:%d] %s\n", __FILE__, __LINE__, __func__); \
-      abort();                                                       \
-    }                                                                \
+#define TEST(cond)                                                         \
+  do {                                                                     \
+    if (!(cond)) {                                                         \
+      fprintf(stderr, "[elf64/%s:%d] %s\n", __FILE__, __LINE__, __func__); \
+      abort();                                                             \
+    }                                                                      \
   } while (0);
 
 #define LOG(...)                                          \

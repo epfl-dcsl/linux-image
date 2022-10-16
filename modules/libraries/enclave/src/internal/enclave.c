@@ -6,6 +6,7 @@
 #include "enclave.h"
 #include "mapper.h"
 #include "process.h"
+#include "tyche_vmcall.h"
 
 #define PAGE 0x1000
 // ——————————————————————— Globals to track enclaves ———————————————————————— //
@@ -119,6 +120,14 @@ int add_enclave(tyche_encl_handle_t handle)
   dll_init_elem(encl, list);
   // Add to the new enclave to the list.
   dll_add((&enclaves), encl, list);
+
+  // Invoke tyche.
+  if(tyche_domain_create(encl) != 0) {
+    pr_err("[TE]: tyche rejected new enclave creation.\n");
+    dll_remove((&enclaves), encl, list);
+    return -1;
+  }
+  pr_info("[TE]: A new enclave was created.\n"); 
   return 0;
 }
 

@@ -6,7 +6,7 @@ BUILDSYSTEM_DIR ?= ../../../builds/linux-tyche-embedded/
 LIB_PT=../../../programs/libs/pts
 
 
-$(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o src/internal/process.o src/internal/mapper.o $(LIB_PT)/src/lib.o $(LIB_PT)/src/x86_64_pt.o
+$(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o src/internal/process.o src/internal/mapper.o src/internal/tyche_vmcall.o $(LIB_PT)/src/lib.o $(LIB_PT)/src/x86_64_pt.o
 obj-m := $(TARGET_MODULE).o
 #$(TARGET_MODULE)-obs += $(LIB_PT)/libpts.o
 ccflags-y += -I$(src)/$(LIB_PT)/include

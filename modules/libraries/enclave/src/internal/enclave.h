@@ -53,8 +53,11 @@ struct enclave_t {
   /// The pid of the task that created this enclave.
   pid_t pid;
 
-  /// Unique enclave identifier
+  /// Unique enclave identifier within the driver.
   tyche_encl_handle_t handle;
+
+  /// Unique identifier within tyche.
+  uint64_t tyche_handle;
 
   /// The enclave's physical value of cr3.
   uint64_t cr3;
