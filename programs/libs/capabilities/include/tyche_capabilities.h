@@ -9,6 +9,9 @@ typedef unsigned long paddr_t;
 /// Internal definition of domain id.
 typedef unsigned long domain_id_t;
 
+/// Internal definition of index.
+typedef unsigned long index_t;
+
 /// Valid types for a capability.
 typedef enum capability_type_t {
   Shared = 0,
@@ -18,7 +21,7 @@ typedef enum capability_type_t {
 
 /// Capability that confers access to a memory region.
 typedef struct capability_t {
-  size_t id;
+  index_t id;
   paddr_t start;
   paddr_t end;
   capability_type_t tpe;
@@ -27,27 +30,28 @@ typedef struct capability_t {
   dll_elem(struct capability_t, list);
 } capability_t;
 
-typedef void* (*capa_alloc_t)(size_t size);
+typedef void* (*capa_alloc_t)(unsigned long size);
+typedef void (*capa_dealloc_t)(void* ptr);
 
 /// Represents the current domain's metadata.
 typedef struct domain_t {
   // The id of the current domain.
   domain_id_t id;
-  // The list of capabilities for this domain.
-  dll_list(struct capability_type_t, capabilities);
-  // The allocator to use whenever we need a new structure.
-  capa_alloc_t allocator;
-} domain_t;
 
-// ———————————————————————————————— Globals ————————————————————————————————— //
-extern domain_t local_domain;
+  // The allocator to use whenever we need a new structure.
+  capa_alloc_t alloc;
+  capa_dealloc_t dealloc;
+
+  // The list of capabilities for this domain.
+  dll_list(struct capability_t, capabilities);
+} domain_t;
 
 // —————————————————————————————————— API ——————————————————————————————————— //
 
 /// Initialize the local domain.
 /// This function enumerates the regions attributed to this domain and populates
 /// the local_domain.
-int init_domain(capa_alloc_t allocator);
+int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator);
 
 /// Transfer the ownership of a given region to another domain.
 /// This requires to check, for example, whenever tpe is confidential,

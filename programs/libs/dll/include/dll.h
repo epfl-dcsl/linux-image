@@ -14,24 +14,24 @@
   } name;
 
 #define dll_init_list(list) \
-  (list)->head = NULL;      \
-  (list)->tail = NULL;
+  (list)->head = 0;         \
+  (list)->tail = 0;
 
 #define dll_init_elem(elem, name) \
   do {                            \
-    (elem)->name.prev = NULL;     \
-    (elem)->name.next = NULL;     \
+    (elem)->name.prev = 0;        \
+    (elem)->name.next = 0;        \
   } while (0);
 
 #define dll_is_empty(list) \
-  ((list)->head == NULL && (list)->tail == NULL)
+  ((list)->head == 0 && (list)->tail == 0)
 
 #define dll_foreach(list, curr, name) \
-  for (curr = (list)->head; (curr) != NULL; (curr) = (curr)->name.next)
+  for (curr = (list)->head; (curr) != 0; (curr) = (curr)->name.next)
 
 #define dll_add(list, elem, name)       \
   do {                                  \
-    if ((list)->head == NULL) {         \
+    if ((list)->head == 0) {            \
       (list)->head = (elem);            \
       (list)->tail = (elem);            \
     } else {                            \
@@ -50,20 +50,20 @@
 
 #define dll_add_first(list, elem, name) \
   do {                                  \
-    (elem)->name.prev = NULL;           \
+    (elem)->name.prev = 0;              \
     (elem)->name.next = (list)->head;   \
     (list)->head = (elem);              \
-    if ((list)->tail == NULL) {         \
+    if ((list)->tail == 0) {            \
       (list)->tail = (elem);            \
     }                                   \
   } while (0);
 
 #define dll_remove(list, elem, name)                    \
   do {                                                  \
-    if ((elem)->name.prev != NULL) {                    \
+    if ((elem)->name.prev != 0) {                       \
       (elem)->name.prev->name.next = (elem)->name.next; \
     }                                                   \
-    if ((elem)->name.next != NULL) {                    \
+    if ((elem)->name.next != 0) {                       \
       (elem)->name.next->name.prev = (elem)->name.prev; \
     }                                                   \
     if ((list)->head == (elem)) {                       \
@@ -72,8 +72,8 @@
     if ((list)->tail == (elem)) {                       \
       (list)->tail = (elem)->name.prev;                 \
     }                                                   \
-    (elem)->name.next = NULL;                           \
-    (elem)->name.prev = NULL;                           \
+    (elem)->name.next = 0;                              \
+    (elem)->name.prev = 0;                              \
   } while (0);
 
 #endif
