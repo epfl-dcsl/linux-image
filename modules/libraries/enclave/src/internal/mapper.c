@@ -1,6 +1,7 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <asm/io.h>
+#include "enclave.h"
 #include "mapper.h"
 
 
@@ -17,6 +18,7 @@ static entry_t* allocate(void* ptr)
   map_info_t* info = NULL;
   void* allocation = NULL;
   struct pa_region_t* region = NULL;
+  struct pa_region_t* in_all_pages = NULL;
   entry_t* page = NULL;
 
   info = (map_info_t*) ptr;
@@ -45,8 +47,25 @@ static entry_t* allocate(void* ptr)
   
   // Add the region to the enclave's page table.
   dll_add(&(info->enclave->pts), region, list);
+
+  // Add a copy of the region in the enclave all regions.
+  in_all_pages = kmalloc(sizeof(struct pa_region_t), GFP_KERNEL);
+  if (in_all_pages == NULL) {
+    goto failure_remove;
+  }
+  in_all_pages->start = region->start;
+  in_all_pages->end = region->end;
+  in_all_pages->tpe = region->tpe;
+  dll_init_elem(in_all_pages, list);
+  dll_init_elem(in_all_pages, globals);
+  
+  // After that call, it is unsafe to access in_all_pages.
+  add_merge_global(info->enclave, in_all_pages);
+
   // return the value
   return page;
+failure_remove:
+  dll_remove(&(info->enclave->pts), region, list);
 failure_unmap:
   vfree(allocation);
   return NULL;
@@ -158,11 +177,31 @@ int build_enclave_cr3(struct enclave_t* encl) {
 
   // Go through each region.
   dll_foreach(&(encl->regions), reg, list) {
+    struct pa_region_t* curr = NULL;
+    struct pa_region_t* copy = NULL;
     if (map_region(reg, &profile) != 0) {
       // There was a failure.
       return -1;
     }
+    // Merge all the physical regions in all_pages.
+    dll_foreach(&(reg->pas), curr, list) {
+      // TODO error handling is quite hard here, we should undo stuff...
+      copy = kmalloc(sizeof(struct pa_region_t), GFP_KERNEL); 
+      if (!copy) {
+        pr_err("[TE]: Failed to kmalloc a pa_region_t.\n");
+        return -1;
+      }
+      copy->start = curr->start;
+      copy->end = curr->end;
+      copy->tpe = curr->tpe;
+      dll_init_elem(copy, list);
+      dll_init_elem(copy, globals);
+
+      if (add_merge_global(encl, copy) !=0 ) {
+        pr_err("[TE]: unable to add and merge the region's pas.\n");
+        return -1;
+      } 
+    }
   }
-  //TODO do we need checks? 
   return 0;
 }

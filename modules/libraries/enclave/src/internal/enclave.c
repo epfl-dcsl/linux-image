@@ -198,7 +198,8 @@ int add_region(struct tyche_encl_add_region_t* region)
     if (reg_iter->start > e_reg->end 
         || (reg_iter->start == e_reg->end && 
           (reg_iter->tpe != e_reg->tpe || reg_iter->flags != e_reg->flags))) {
-      prev = reg_iter;
+      //TODO is that correct?
+      //prev = reg_iter;
       break;
     }
     
@@ -240,12 +241,17 @@ int add_region(struct tyche_encl_add_region_t* region)
       }
       // Merge and remove.
       e_reg->start = reg_iter->start;
-      e_reg->src = reg_iter->start;
-      dll_remove(&(encl->regions), reg_iter, list);
+      dll_remove(&(encl->regions), reg_iter, list); 
       kfree(reg_iter);
-      break;
+      reg_iter = prev;
+      if (prev != NULL) {
+        prev = prev->list.prev;
+      } else {
+        prev = NULL;
+        reg_iter = encl->regions.head;
+      }
+      continue;
     }
-    // We should never get here.
 next:
     prev = reg_iter;
     reg_iter = reg_iter->list.next;
@@ -296,10 +302,12 @@ int commit_enclave(tyche_encl_handle_t handle)
       goto failure; 
     }
   }
-  //TODO create the cr3.
+  // Create the cr3.
   if (build_enclave_cr3(encl)) {
     goto failure;
   }
+
+  // Call tyche to split regions. 
   return 0;
 
   // TODO Add all the pages to the enclave all_pages list.
@@ -349,4 +357,85 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
   // All good, we add at the tail of the list.
   dll_add(&region->pas, *pa_region, list);
   return 0;
+}
+
+// —————————————————————————————— Internal API —————————————————————————————— //
+int add_merge_global(struct enclave_t* enclave, struct pa_region_t* region)
+{
+  struct pa_region_t* iter = NULL;
+  struct pa_region_t* prev = NULL;
+  if (enclave == NULL || region == NULL) {
+    return -1;
+  }
+  for(iter = enclave->all_pages.head; iter != NULL;) {
+    if (overlap(iter->start, iter->end, region->start, region->end)) {
+      pr_err("[TE]: physical region address overlap detected.\n");
+      goto failure;
+    }
+
+    // CASES WHERE: region is on the left.
+
+    // Too far in the list already and no merge.
+    if (iter->start > region->end
+        || (iter->start == region->end && iter->tpe != region->tpe)) {
+      break;
+    }
+
+    // Contiguous, we merge on if the types are the same.
+    if (iter->start == region->end && iter->tpe == region->tpe) {
+      iter->start = region->start;
+      kfree(region);
+      region = NULL;
+      prev = NULL;
+      break;
+    }
+
+    // CASES WHERE: region is on the right.
+    
+    // Safely skip this entry.
+    if (iter->end < region->start
+        || (iter->end == region->start && iter->tpe != region->tpe)) {
+      goto next;
+    }
+
+    // We need to merge and have no guarantee the next region does not 
+    // overlap.
+    if (iter->end == region->start && iter->tpe == region->tpe) {
+      struct pa_region_t* next = iter->globals.next;
+      // There is an overlap with the next element.
+      // We cannot add the region to the list.
+      if (next != NULL && overlap(iter->start, region->end, next->start, next->end)) {
+        goto failure;
+      }
+      // Merge and remove.
+      region->start = iter->start;
+      dll_remove(&(enclave->all_pages), iter, globals);
+      kfree(iter);
+      iter = prev;
+      if (prev != NULL) {
+        prev = prev->globals.prev;
+      } else {
+        prev = NULL;
+        iter = enclave->all_pages.head;
+      }
+      continue;
+    }
+next:
+    prev = iter;
+    iter = iter->globals.next;
+  }
+  // The region has been merge on the left.
+  if (region == NULL) {
+    goto done; 
+  }
+
+  if (prev != NULL) {
+    dll_add_after(&(enclave->all_pages), region, globals, prev);
+  } else {
+    dll_add_first(&(enclave->all_pages), region, globals);
+  }
+done:
+  return 0;
+failure:
+  return -1;
 }

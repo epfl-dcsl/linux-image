@@ -82,4 +82,7 @@ int add_region(struct tyche_encl_add_region_t* region);
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region);
 int commit_enclave(tyche_encl_handle_t handle);
 
+// —————————————————————————— Enclave Internal API —————————————————————————— //
+int add_merge_global(struct enclave_t* enclave, struct pa_region_t* region);
+
 #endif
