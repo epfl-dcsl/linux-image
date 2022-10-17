@@ -6,7 +6,7 @@
 #define _IN_MODULE
 #include "../../include/tyche_enclave.h"
 #undef _IN_MODULE
-#include "../../include/dll.h"
+#include "dll.h"
 
 // ——————————————————————————— Type Declarations ———————————————————————————— //
 

@@ -21,3 +21,9 @@ int tyche_domain_create(struct enclave_t* encl)
   }
   return (int)result;
 }
+
+int tyche_split_grant(struct enclave_t* enclave, struct pa_region_t* region)
+{
+  //TODO
+  return 0;
+}
