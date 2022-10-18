@@ -52,3 +52,19 @@ int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_typ
   *tpe = (capability_type_t) frame.ret_3;
   return 0;
 }
+
+int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle)
+{
+  vmcall_frame_t frame;
+  if (new_handle == NULL) {
+    return -1;
+  }
+  frame.id= TYCHE_REGION_SPLIT;
+  frame.value_1 = handle;
+  frame.value_2 = split_addr;
+  if (tyche_call(&frame) != 0) {
+    return -1;
+  }
+  *new_handle = frame.ret_1;
+  return 0;
+}

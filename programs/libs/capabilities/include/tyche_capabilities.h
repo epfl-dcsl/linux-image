@@ -3,6 +3,9 @@
 
 #include "dll.h"
 #include "ecs.h"
+#include "types.h"
+
+#define ALIGNMENT (0x1000)
 
 /// Capability that confers access to a memory region.
 typedef struct capability_t {
@@ -30,8 +33,11 @@ typedef struct domain_t {
   capa_alloc_t alloc;
   capa_dealloc_t dealloc;
 
-  // The list of capabilities for this domain.
+  // The list of used capabilities for this domain.
   dll_list(struct capability_t, capabilities);
+
+  // The list of free capabilities for this domain.
+  dll_list(struct capability_t, frees);
 
   // Hardware value read.
   ecs_header_t hw;
@@ -43,6 +49,11 @@ typedef struct domain_t {
 /// This function enumerates the regions attributed to this domain and populates
 /// the local_domain.
 int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator);
+
+/// Splits the capability capa at address split_addr to create and return the split one
+/// with tpe type.
+/// The return value is taken from local_domain.frees.
+capability_t* split_capa(capability_t* capa, paddr_t split_addr);
 
 /// Transfer the ownership of a given region to another domain.
 /// This requires to check, for example, whenever tpe is confidential,

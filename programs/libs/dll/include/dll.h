@@ -76,4 +76,8 @@
     (elem)->name.prev = 0;                              \
   } while (0);
 
+#define dll_contains(start, end, val) ((start <= val) && (val < end))
+
+#define dll_overlap(s1, e1, s2, e2) (!(((s1 <= s2) && (s2 < e1)) || ((s2 <= s1) && (s1 < e2))))
+
 #endif
