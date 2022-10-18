@@ -40,7 +40,7 @@ int tyche_call(vmcall_frame_t* frame);
 int tyche_get_domain_id(domain_id_t* domain);
 int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_type_t* tpe);
 int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle);
-int tyche_grant_capa(domain_id_t target, paddr_t handle, capability_type_t tpe);
+int tyche_grant_capa(domain_id_t target, paddr_t handle);
 int tyche_share_capa(domain_id_t target, paddr_t handle, capability_type_t tpe);
 
 #endif

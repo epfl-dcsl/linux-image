@@ -103,7 +103,7 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
   capability_t* curr = NULL;
   capability_t* split = NULL;
   capability_t* rest = NULL;
-  // Quick checks. TODO check alignment of start and end too.
+  // Quick checks.
   if (start >= end || tpe > Other
       || ((start % ALIGNMENT) != 0) || ((end % ALIGNMENT) != 0)) {
     goto failure;
@@ -118,6 +118,12 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
 
   // Unable to find the capa.
   if (curr == NULL) {
+    goto failure;
+  }
+
+  // We cannot grant something confidential if it is not confidential.
+  if (tpe <= Confidential && curr->tpe > Confidential)
+  {
     goto failure;
   }
   
@@ -136,7 +142,7 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
 
   // Now transfer with the right tpe.
   if (tpe <= Confidential) {
-    tyche_grant_capa(dom, split->handle, tpe);
+    tyche_grant_capa(dom, split->handle);
     dll_remove(&(local_domain.capabilities), split, list);
     local_domain.dealloc((void*)split);
   } else {
