@@ -10,15 +10,13 @@
 /// Capability that confers access to a memory region.
 typedef struct capability_t {
   index_t index;
+  paddr_t handle;
   paddr_t start;
   paddr_t end;
   capability_type_t tpe;
 
   // This structure can be put in a double-linked list
   dll_elem(struct capability_t, list);
-
-  // Hardware value read.
-  ecs_entry_t hw;
 } capability_t;
 
 typedef void* (*capa_alloc_t)(unsigned long size);
@@ -35,12 +33,6 @@ typedef struct domain_t {
 
   // The list of used capabilities for this domain.
   dll_list(struct capability_t, capabilities);
-
-  // The list of free capabilities for this domain.
-  dll_list(struct capability_t, frees);
-
-  // Hardware value read.
-  ecs_header_t hw;
 } domain_t;
 
 // —————————————————————————————————— API ——————————————————————————————————— //

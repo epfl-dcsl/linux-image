@@ -8,141 +8,95 @@ static domain_t local_domain;
 
 int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
 {
-  vmcall_frame_t frame;
   index_t i = 0;
-  index_t capa_idx = 0;
-  capability_t* capa = 0;
+  index_t nb_capa = 0;
   if (allocator == 0) {
     return -1;
   }
   local_domain.alloc = allocator;
   local_domain.dealloc = deallocator;
   dll_init_list(&(local_domain.capabilities));
-  dll_init_list(&(local_domain.frees));
 
   // Acquire the current domain's id.
   if (tyche_get_domain_id(&(local_domain.id)) != 0) {
-    return -1;
+    goto fail;
   }
   
-  // Read the header.
-  if(read_header(&local_domain.hw) != 0) {
-    return -1;
+  // Read the number of ECS entries.
+  if (ecs_read_size(&nb_capa) != 0) {
+    goto fail;
   }
 
   // Enumerate the regions for this domain.
-  for (capa_idx = local_domain.hw.head; capa_idx != TYCHE_CAPA_NULL;) {
-    // keep track of how many handles we visited.
-    capa = (capability_t*)local_domain.alloc(sizeof(capability_t));
+  for (i = TYCHE_ECS_FIRST_ENTRY; i <= nb_capa; i++) {
+    capability_t* capa = (capability_t*) local_domain.alloc(sizeof(capability_t));
     if (capa == NULL) {
       goto failure;
     }
-    if (read_entry(capa_idx, &(capa->hw)) != 0) {
+    if (ecs_read_entry(i, &(capa->handle)) != 0) {
       goto failure;
     }
-    capa->index = capa_idx; 
+    capa->index = i; 
     dll_init_elem(capa, list); 
     // Get the handle details.
-    if (tyche_read_capa(capa->hw.handle, &(capa->start), &(capa->end), &(capa->tpe)) != 0) {
+    if (tyche_read_capa(capa->handle, &(capa->start), &(capa->end), &(capa->tpe)) != 0) {
       goto failure;
     }
     
     // Add the capability to the list.
     dll_add(&(local_domain.capabilities), capa, list);
-    capa_idx = capa->hw.next;
-    i++;
   }
-  if (i != local_domain.hw.size) {
-    goto failure;
-  }
-
-  // Init the free lists now.
-  for (i = TYCHE_ECS_FIRST_IDX; i < TYCHE_ECS_LAST_IDX; i+= TYCHE_ECS_STEP) {
-    int contains = 0;
-    capa = NULL;
-    dll_foreach(&(local_domain.capabilities), capa, list) {
-      if (capa->index == i) {
-        contains = 1;
-        break;
-      }
-    }
-    if (contains != 0) {
-      continue;
-    }
-    capa = NULL;
-    capa = (capability_t*)local_domain.alloc(sizeof(capability_t));
-    if (capa == NULL) {
-      goto failure;
-    }
-    // The only valid element is i.
-    capa->index = i;
-    capa->start = 0;
-    capa->end = 0;
-    capa->tpe = Other;
-    dll_add(&(local_domain.frees), capa, list);
-  } 
+  // We are all done
   return 0;
 failure:
-  capa = 0;
   while(!dll_is_empty(&local_domain.capabilities)) {
-    capa = local_domain.capabilities.head;
+    capability_t* capa = local_domain.capabilities.head;
     dll_remove(&(local_domain.capabilities), capa, list);
     local_domain.dealloc((void*)capa);
   }
-  while(!dll_is_empty(&local_domain.frees)) {
-    capa = local_domain.frees.head;
-    dll_remove(&(local_domain.frees), capa, list);
-    local_domain.dealloc((void*)capa);
-  }
+fail:
   return -1;
 }
 
 capability_t* split_capa(capability_t* capa, paddr_t split_addr)
 {
   capability_t *split = NULL;
-  if (capa == NULL || split == NULL) {
+  if (capa == NULL) {
     goto failure;
   }
-  // Wrong capa.
+  // Wrong capability.
   if (!dll_contains(capa->start, capa->end, split_addr)) {
     goto failure;
   }
-  if (dll_is_empty(&(local_domain.frees)) != 0) {
-    goto failure;
-  }
-  split = local_domain.frees.head;
+
+  // Allocate the new capability.
+  split = (capability_t*) local_domain.alloc(sizeof(capability_t));
   if (split == NULL) {
     goto failure;
   }
-  dll_remove(&(local_domain.frees), local_domain.frees.head, list);
   split->start = split_addr;
   split->end = capa->end;
   split->tpe = capa->tpe;
+  dll_init_elem(split, list);
 
   // Call tyche for the split.
-  if (tyche_split_capa(capa->hw.handle, split_addr, &(split->hw.handle)) != 0) {
-    goto failure;
+  if (tyche_split_capa(capa->handle, split_addr, &(split->handle)) != 0) {
+    goto fail_dealloc;
   }
   
   // We managed to split!
   capa->end = split_addr;
   dll_add(&(local_domain.capabilities), split, list);
-
-  // Update the ecs.
-  if (add_entry(&local_domain.hw, split->index, &(split->hw)) != 0) {
-    goto failure;
-  }
-
-  // TODO write the entry inside the ECS.
-  return 0;
+  return split;
+fail_dealloc:
+  local_domain.dealloc((void*)split);
 failure:
   return NULL;
 }
 
 int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe)
 {
-  // TODO
-  // 1. Find the capa. ok!
+  // 1. Find the capa.
   // 2. Split.
   // 3. If tpe == Confidential -> remove
   // 4. call the transfer.
@@ -166,6 +120,28 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
   if (curr == NULL) {
     goto failure;
   }
+  
+  // Split the capability.
+  split = split_capa(curr, start);
+  if (split == NULL) {
+    goto failure;
+  }
+
+  // Do we need a three way split?
+  if (split->end > end) {
+    if (split_capa(split, end) == NULL) {
+      goto failure;
+    }
+  } 
+
+  // Now transfer with the right tpe.
+  if (tpe <= Confidential) {
+    tyche_grant_capa(dom, split->handle, tpe);
+    dll_remove(&(local_domain.capabilities), split, list);
+    local_domain.dealloc((void*)split);
+  } else {
+    tyche_share_capa(dom, split->handle, tpe);
+  }
   return 0;
 failure:
   return -1;
@@ -173,5 +149,14 @@ failure:
 
 int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t tpe)
 {
+  capability_t* curr = NULL;
+  capability_t* merge = NULL;
+  dll_foreach(&(local_domain.capabilities), curr, list) {
+    if (dll_overlap(curr->start, curr->end, start, end) != 0) {
+      goto failure;
+    }
+  }
   return 0;
+failure:
+  return -1;
 }
