@@ -90,3 +90,37 @@ int write_entry(index_t idx, ecs_entry_t* entry)
   }
   return 0;
 }
+
+int add_entry(ecs_header_t* header, index_t idx, ecs_entry_t* entry)
+{
+  ecs_entry_t tail;
+  if (header == NULL || entry == NULL) {
+    goto failure;
+  }
+  entry->prev = TYCHE_CAPA_NULL;
+  entry->next = TYCHE_CAPA_NULL;
+  if (header->head == TYCHE_CAPA_NULL) {
+    header->head = idx;
+    header->tail = idx;
+  } else {
+    if (read_entry(header->tail, &tail) != 0) {
+      goto failure;
+    }
+    tail.next = idx;
+    entry->prev = header->tail;
+    if (write_entry(header->tail, &tail) != 0) {
+      goto failure;
+    }
+    if (write_entry(idx, entry) != 0) {
+      goto failure;
+    }
+    header->tail = idx;
+  }
+  header->size++;
+  if (write_header(header) != 0) {
+    goto failure;
+  }
+  return 0;
+failure:
+  return -1;
+}

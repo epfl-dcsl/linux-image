@@ -128,7 +128,10 @@ capability_t* split_capa(capability_t* capa, paddr_t split_addr)
   capa->end = split_addr;
   dll_add(&(local_domain.capabilities), split, list);
 
-  // TODO Update the ecs.
+  // Update the ecs.
+  if (add_entry(&local_domain.hw, split->index, &(split->hw)) != 0) {
+    goto failure;
+  }
 
   // TODO write the entry inside the ECS.
   return 0;

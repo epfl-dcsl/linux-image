@@ -6,10 +6,8 @@
 /// It basically abstracts a very simple monitor API that reads 64 bits at
 /// a given offset.
 ///
-/// Conceptually, it is just an array implementation of a linked list.
-/// The first three 64 bits are the header entry.
-/// Each element is then three 64 bits long too, containing the handle,
-/// a prev and next element.
+/// Conceptually, it is just an array of 64 bits entries where index 0 gives
+/// the size of the populated array.
 
 // ———————————————————————————————— Globals ————————————————————————————————— //
 //TODO eventually make that a queriable thing from tyche.
@@ -61,5 +59,8 @@ int read_entry(index_t idx, ecs_entry_t* entry);
 
 /// Write an entry.
 int write_entry(index_t idx, ecs_entry_t* entry);
+
+/// Add an entry inside the ecs.
+int add_entry(ecs_header_t* header, index_t idx, ecs_entry_t* entry);
 
 #endif
