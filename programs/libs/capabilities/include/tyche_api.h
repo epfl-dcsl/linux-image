@@ -17,6 +17,8 @@
 #define TYCHE_ECS_HDR_SZ ((index_t)3)
 #define TYCHE_ECS_ENT_SZ ((index_t)3)
 
+#define TYCHE_CAPA_NULL ((index_t)0)
+
 /// A type to pass arguments and receive when calling tyche.
 typedef struct vmcall_frame_t {
   // Vmcall id.
@@ -35,5 +37,7 @@ typedef struct vmcall_frame_t {
 
 // —————————————————————————————————— API ——————————————————————————————————— //
 int tyche_call(vmcall_frame_t* frame);
+int tyche_get_domain_id(domain_id_t* domain);
+int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_type_t* tpe);
 
 #endif

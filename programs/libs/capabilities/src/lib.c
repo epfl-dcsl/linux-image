@@ -4,16 +4,13 @@
 // ———————————————————————————————— Globals ————————————————————————————————— //
 static domain_t local_domain;
 
-
-
 // —————————————————————————————— Local types ——————————————————————————————— //
 
 int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
 {
   vmcall_frame_t frame;
-  unsigned long nb_regions = 0;
-  unsigned long i = 0;
-  unsigned long handle = 0;
+  index_t i = 0;
+  index_t capa_idx = 0;
   capability_t* capa = 0;
   if (allocator == 0) {
     return -1;
@@ -22,56 +19,40 @@ int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
   local_domain.dealloc = deallocator;
 
   // Acquire the current domain's id.
-  frame.id = TYCHE_DOMAIN_GET_OWN_ID;
-  if (tyche_call(&frame) != 0) {
+  if (tyche_get_domain_id(&(local_domain.id)) != 0) {
     return -1;
   }
-  local_domain.id = (index_t) frame.ret_1;
-  // clean
-  frame.ret_1 = 0;
+  
+  // Read the header.
+  if(read_header(&local_domain.hw) != 0) {
+    return -1;
+  }
 
   // Enumerate the regions for this domain.
-  frame.id = TYCHE_ECS_READ; 
-  frame.value_1 = 0;
-  frame.value_2 = 1;
-  if (tyche_call(&frame) != 0) {
-    return -1;
-  }
-  nb_regions = frame.ret_1; 
-  // clean
-  frame.ret_1 = 0;
-  
-  // For all the regions, ask tyche to give us bounds and tpe. 
-  frame.id = TYCHE_ECS_READ;
-  for (i = 0; i < nb_regions; i++) {
-    frame.value_1 = i;
-    frame.value_2 = 1; 
-    if (tyche_call(&frame) != 0) {
-      goto failure;
-    }
-    // We got the handle as a result.
-    handle = frame.ret_1; 
-    
-    // Let's read the capa information.
-    frame.id = TYCHE_READ_CAPA;
-    frame.value_1 = handle;
-    if (tyche_call(&frame) != 0) {
-      goto failure; 
-    }
-   
-    // We might need to maintain a linked list of capabilities in tyche.
+  for (capa_idx = local_domain.hw.head; capa_idx != TYCHE_CAPA_NULL;) {
+    // keep track of how many handles we visited.
     capa = (capability_t*)local_domain.alloc(sizeof(capability_t));
-    if (capa == 0) {
+    if (capa == NULL) {
       goto failure;
     }
-    capa->id = i;
-    capa->start = frame.ret_1;
-    capa->end = frame.ret_2;
-    capa->tpe = (capability_type_t) frame.ret_3;
-    dll_init_elem(capa, list);
+    if (read_entry(capa_idx, &(capa->hw)) != 0) {
+      goto failure;
+    }
+    capa->index = capa_idx; 
+    dll_init_elem(capa, list); 
+    // Get the handle details.
+    if (tyche_read_capa(capa->hw.handle, &(capa->start), &(capa->end), &(capa->tpe)) != 0) {
+      goto failure;
+    }
+    
+    // Add the capability to the list.
     dll_add(&(local_domain.capabilities), capa, list);
+    capa_idx = capa->hw.next;
+    i++;
   }
-  // All done.
+  if (i != local_domain.hw.size) {
+    goto failure;
+  }
   return 0;
 failure:
   capa = 0;

@@ -20,3 +20,35 @@ int tyche_call(vmcall_frame_t* frame)
 
   return (int)result;
 } 
+
+int tyche_get_domain_id(domain_id_t* domain)
+{
+  vmcall_frame_t frame;
+  if (domain == NULL) {
+    return -1;
+  }
+  frame.id= TYCHE_DOMAIN_GET_OWN_ID;
+  if (tyche_call(&frame) != 0) {
+    return -1;
+  }
+  *domain = frame.ret_1;
+  return 0;
+}
+
+int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_type_t* tpe)
+{
+  vmcall_frame_t frame;
+  if (start == NULL || end == NULL || tpe == NULL) {
+    return -1;
+  } 
+
+  frame.id = TYCHE_READ_CAPA;
+  frame.value_1 = handle;
+  if (tyche_call(&frame) != 0) {
+    return -1;
+  }
+  *start = frame.ret_1;
+  *end = frame.ret_2;
+  *tpe = (capability_type_t) frame.ret_3;
+  return 0;
+}

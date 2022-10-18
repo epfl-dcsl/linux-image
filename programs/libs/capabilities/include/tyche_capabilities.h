@@ -4,22 +4,18 @@
 #include "dll.h"
 #include "ecs.h"
 
-/// Valid types for a capability.
-typedef enum capability_type_t {
-  Shared = 0,
-  Confidential = 1,
-  Other = 3,
-} capability_type_t;
-
 /// Capability that confers access to a memory region.
 typedef struct capability_t {
-  index_t id;
+  index_t index;
   paddr_t start;
   paddr_t end;
   capability_type_t tpe;
 
   // This structure can be put in a double-linked list
   dll_elem(struct capability_t, list);
+
+  // Hardware value read.
+  ecs_entry_t hw;
 } capability_t;
 
 typedef void* (*capa_alloc_t)(unsigned long size);
@@ -36,6 +32,9 @@ typedef struct domain_t {
 
   // The list of capabilities for this domain.
   dll_list(struct capability_t, capabilities);
+
+  // Hardware value read.
+  ecs_header_t hw;
 } domain_t;
 
 // —————————————————————————————————— API ——————————————————————————————————— //
