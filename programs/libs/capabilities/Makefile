@@ -1,14 +1,19 @@
 all: libcapabilities.a libcapabilities.so
 
 LIB_DLL=../dll
+SRC_FILES =	$(wildcard src/*.c) 
+OBJ_FILES = $(patsubst %.c, %.o, $(SRC_FILES)) 
+HDR_FILES = include/ecs.h include/tyche_api.h include/tyche_capabilities.h include/types.h
 
-libcapabilities.so: src/lib.c include/tyche_capabilities.h
-	gcc -g -nostdlib -shared -Iinclude/ -I$(LIB_DLL)/include -o $@ -fPIC $< 
+libcapabilities.so: $(SRC_FILES) $(HDR_FILES)
+	gcc -g -nostdlib -shared -Iinclude/ -I$(LIB_DLL)/include -o $@ -fPIC $(SRC_FILES) 
 
-libcapabilities.a: src/lib.c include/tyche_capabilities.h
-	gcc -g -nostdlib -c -Iinclude/ -I$(LIB_DLL)/include -o lib.o $<
-	ar rcs $@ lib.o
-	rm lib.o
+%.o : %.c
+	gcc -g -nostdlib -Iinclude/ -I$(LIB_DLL)/include -c $< -o $@
+
+libcapabilities.a: $(OBJ_FILES) $(HDR_FILES)
+	ar rcs $@ $(OBJ_FILES)
+	rm $(OBJ_FILES)
 
 .PHONY: clean
 

@@ -2,15 +2,7 @@
 #define __INCLUDE_TYCHE_CAPABILITIES_H__
 
 #include "dll.h"
-
-/// Internal definition of our types so we can move to 32 bits.
-typedef unsigned long paddr_t;
-
-/// Internal definition of domain id.
-typedef unsigned long domain_id_t;
-
-/// Internal definition of index.
-typedef unsigned long index_t;
+#include "ecs.h"
 
 /// Valid types for a capability.
 typedef enum capability_type_t {
