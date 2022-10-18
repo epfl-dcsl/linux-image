@@ -4,14 +4,16 @@
 #include "types.h"
 
 /// Copied from the tyche source code.
-#define TYCHE_DOMAIN_GET_OWN_ID 0x100
-#define TYCHE_DOMAIN_CREATE 0x101
-#define TYCHE_DOMAIN_SEAL 0x102
-#define TYCHE_ECS_READ 0x103
-#define TYCHE_READ_CAPA 0x105
-#define TYCHE_REGION_SPLIT 0x200
-#define TYCHE_GRANT_CAPA 0x201
-#define TYCHE_SHARE_CAPA 0x203
+#define TYCHE_DOMAIN_GET_OWN_ID 0x100;
+#define TYCHE_DOMAIN_CREATE 0x101;
+#define TYCHE_DOMAIN_SEAL 0x102;
+#define TYCHE_DOMAIN_GRANT_REGION 0x103;
+#define TYCHE_REGION_SPLIT 0x200;
+#define TYCHE_REGION_GET_INFO 0x201;
+#define TYCHE_CONFIG_NB_REGIONS 0x400;
+#define TYCHE_CONFIG_READ_REGION 0x401;
+
+#define TYCHE_SHARE_CAPA 0xdeadbeef
 
 //TODO we need free spots too.
 

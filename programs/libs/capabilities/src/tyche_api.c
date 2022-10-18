@@ -42,7 +42,7 @@ int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_typ
     return -1;
   } 
 
-  frame.id = TYCHE_READ_CAPA;
+  frame.id = TYCHE_REGION_GET_INFO;
   frame.value_1 = handle;
   if (tyche_call(&frame) != 0) {
     return -1;
@@ -71,8 +71,10 @@ int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle)
 
 int tyche_grant_capa(domain_id_t target, paddr_t handle, capability_type_t tpe)
 {
+  //TODO apparently it doesn't care about the tpe.
+  //We should change that.
   vmcall_frame_t frame;
-  frame.id = TYCHE_GRANT_CAPA;
+  frame.id = TYCHE_DOMAIN_GRANT_REGION;
   frame.value_1 = target;
   frame.value_2 = handle;
   frame.value_3 = tpe;

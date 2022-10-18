@@ -6,13 +6,10 @@
 /// It basically abstracts a very simple monitor API that reads 64 bits at
 /// a given offset.
 ///
-/// Conceptually, it is just an array of 64 bits entries where index 0 gives
-/// the size of the populated array.
+/// Conceptually, it is just an array of 64 bits entries.
 
 // ————————————————————————— Size-dependent offsets ————————————————————————— //
-#define TYCHE_ECS_SZ_IDX ((index_t)0)
-
-#define TYCHE_ECS_FIRST_ENTRY ((index_t)1)
+#define TYCHE_ECS_FIRST_ENTRY ((index_t)0)
 
 // —————————————————————————————————— API ——————————————————————————————————— //
 

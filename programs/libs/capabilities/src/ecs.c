@@ -7,9 +7,7 @@ int ecs_read_size(index_t* size)
   if (size == NULL) {
     goto fail;
   }
-  frame.id = TYCHE_ECS_READ;
-  frame.value_1 = TYCHE_ECS_SZ_IDX;
-  frame.value_2 = 1;
+  frame.id = TYCHE_CONFIG_NB_REGIONS;
   if (tyche_call(&frame) != 0) {
     goto fail;
   }
@@ -22,10 +20,10 @@ fail:
 int ecs_read_entry(index_t idx, paddr_t* entry)
 {
   vmcall_frame_t frame;
-  if (entry == NULL || idx == TYCHE_ECS_SZ_IDX) {
+  if (entry == NULL) {
     goto fail;
   }
-  frame.id = TYCHE_ECS_READ;
+  frame.id = TYCHE_CONFIG_READ_REGION;
   frame.value_1 = idx;
   frame.value_2 = 1;
   if (tyche_call(&frame) != 0) {

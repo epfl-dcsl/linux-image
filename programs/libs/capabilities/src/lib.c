@@ -28,7 +28,7 @@ int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
   }
 
   // Enumerate the regions for this domain.
-  for (i = TYCHE_ECS_FIRST_ENTRY; i <= nb_capa; i++) {
+  for (i = TYCHE_ECS_FIRST_ENTRY; i < nb_capa; i++) {
     capability_t* capa = (capability_t*) local_domain.alloc(sizeof(capability_t));
     if (capa == NULL) {
       goto failure;
