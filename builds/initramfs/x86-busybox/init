@@ -21,7 +21,9 @@ Welcome to Tyche
 
 
 !
-cd home/tyche/drivers/
+cd home/tyche/drivers/tyche-capabilities
+sh tyche-capabilities.sh
+cd ../tyche-enclave 
 sh tyche_enclave.sh
 cd ..
 exec /bin/sh

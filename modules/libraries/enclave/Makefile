@@ -17,7 +17,7 @@ PWD:=$(shell pwd)
 
 
 ## —————————————————————— Where to install the module ——————————————————————— ##
-INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/
+INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/tyche-enclave
 
 all : 
 # run kernel build system to make module
