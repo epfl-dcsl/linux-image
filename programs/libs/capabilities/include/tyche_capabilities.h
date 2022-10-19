@@ -3,13 +3,13 @@
 
 #include "dll.h"
 #include "ecs.h"
-#include "types.h"
+#include "tyche_capabilities_types.h"
 
 #define ALIGNMENT (0x1000)
 
 /// Capability that confers access to a memory region.
 typedef struct capability_t {
-  index_t index;
+  capa_index_t index;
   paddr_t handle;
   paddr_t start;
   paddr_t end;
@@ -41,6 +41,10 @@ typedef struct domain_t {
 /// This function enumerates the regions attributed to this domain and populates
 /// the local_domain.
 int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator);
+
+/// Creates a new domain.
+/// Sets the result inside the provided handle.
+int create_domain(domain_id_t* handle);
 
 /// Splits the capability capa at address split_addr to create and return the split one
 /// with tpe type.

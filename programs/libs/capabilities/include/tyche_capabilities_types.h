@@ -1,5 +1,5 @@
-#ifndef __INCLUDE_CAPA_TYPES_H__
-#define __INCLUDE_CAPA_TYPES_H__
+#ifndef __INCLUDE_TYCHE_CAPABILITIES_TYPES_H__
+#define __INCLUDE_TYCHE_CAPABILITIES_TYPES_H__
 
 #ifndef NULL
 #define NULL ((void*)0)
@@ -12,12 +12,13 @@ typedef unsigned long paddr_t;
 typedef unsigned long domain_id_t;
 
 /// Internal definition of index.
-typedef unsigned long index_t;
+typedef unsigned long capa_index_t;
 
 /// Valid types for a capability.
 typedef enum capability_type_t {
-  Shared = 0,
+  PtEntry = 0,
   Confidential = 1,
+  Shared,
   Other = 3,
 } capability_type_t;
 

@@ -8,8 +8,8 @@ static domain_t local_domain;
 
 int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
 {
-  index_t i = 0;
-  index_t nb_capa = 0;
+  capa_index_t i = 0;
+  capa_index_t nb_capa = 0;
   if (allocator == 0) {
     return -1;
   }
@@ -58,6 +58,19 @@ fail:
   return -1;
 }
 
+int create_domain(domain_id_t* handle)
+{
+  if (handle == NULL) {
+    goto fail;
+  }
+  if (tyche_create_domain(handle) != 0) {
+    goto fail;
+  }
+  return 0;
+fail:
+  return -1;
+}
+
 capability_t* split_capa(capability_t* capa, paddr_t split_addr)
 {
   capability_t *split = NULL;
@@ -102,7 +115,6 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
   // 4. call the transfer.
   capability_t* curr = NULL;
   capability_t* split = NULL;
-  capability_t* rest = NULL;
   // Quick checks.
   if (start >= end || tpe > Other
       || ((start % ALIGNMENT) != 0) || ((end % ALIGNMENT) != 0)) {
@@ -156,11 +168,11 @@ failure:
 int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t tpe)
 {
   capability_t* curr = NULL;
-  capability_t* merge = NULL;
   dll_foreach(&(local_domain.capabilities), curr, list) {
     if (dll_overlap(curr->start, curr->end, start, end) != 0) {
       goto failure;
     }
+    //TODO
   }
   return 0;
 failure:

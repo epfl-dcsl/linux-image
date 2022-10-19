@@ -3,7 +3,7 @@ all: libcapabilities.a libcapabilities.so
 LIB_DLL=../dll
 SRC_FILES =	$(wildcard src/*.c) 
 OBJ_FILES = $(patsubst %.c, %.o, $(SRC_FILES)) 
-HDR_FILES = include/ecs.h include/tyche_api.h include/tyche_capabilities.h include/types.h
+HDR_FILES = $(wildcard include/*.h)
 
 libcapabilities.so: $(SRC_FILES) $(HDR_FILES)
 	gcc -g -nostdlib -shared -Iinclude/ -I$(LIB_DLL)/include -o $@ -fPIC $(SRC_FILES) 

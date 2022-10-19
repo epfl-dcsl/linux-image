@@ -35,7 +35,13 @@ static void __exit tyche_capabilities_exit(void)
 }
 
 // ————————————————————————————— API forwarders ————————————————————————————— //
-int tyche_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe)
+
+int tc_create_domain(domain_id_t* handle)
+{
+  return create_domain(handle);
+}
+
+int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe)
 {
   return transfer_capa(dom, start, end, tpe);
 }
@@ -43,4 +49,5 @@ int tyche_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capab
 
 module_init(tyche_capabilities_init);
 module_exit(tyche_capabilities_exit);
-EXPORT_SYMBOL(tyche_transfer_capability);
+EXPORT_SYMBOL(tc_create_domain);
+EXPORT_SYMBOL(tc_transfer_capability);

@@ -5,12 +5,13 @@ BUILDSYSTEM_DIR ?= ../../../builds/linux-tyche-embedded/
 
 LIB_PT=../../../programs/libs/pts
 LIB_DLL=../../../programs/libs/dll
+LIB_CAPA=../../../programs/libs/capabilities/
 
 
 $(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o src/internal/process.o src/internal/mapper.o src/internal/tyche_vmcall.o $(LIB_PT)/src/lib.o $(LIB_PT)/src/x86_64_pt.o
 obj-m := $(TARGET_MODULE).o
 #$(TARGET_MODULE)-obs += $(LIB_PT)/libpts.o
-ccflags-y += -I$(src)/$(LIB_PT)/include -I$(src)/$(LIB_DLL)/include
+ccflags-y += -I$(src)/$(LIB_PT)/include -I$(src)/$(LIB_DLL)/include -I$(src)/$(LIB_CAPA)/include
 
 ## ——————————————————— Where to generate the build files ———————————————————— ##
 PWD:=$(shell pwd)
@@ -21,7 +22,7 @@ INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/tyche-e
 
 all : 
 # run kernel build system to make module
-	$(MAKE) -C $(BUILDSYSTEM_DIR) M=$(PWD) modules
+	KBUILD_MODPOST_WARN=1 $(MAKE) -C $(BUILDSYSTEM_DIR) M=$(PWD) modules
 
 .PHONY: install 
 

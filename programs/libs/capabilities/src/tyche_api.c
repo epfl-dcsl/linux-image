@@ -1,5 +1,7 @@
 #include "tyche_api.h"
 
+//TODO zero out the frame.
+
 /// Simple generic vmcall implementation.
 int tyche_call(vmcall_frame_t* frame)
 {
@@ -32,6 +34,20 @@ int tyche_get_domain_id(domain_id_t* domain)
     return -1;
   }
   *domain = frame.ret_1;
+  return 0;
+}
+
+int tyche_create_domain(domain_id_t* handle)
+{
+  vmcall_frame_t frame;
+  if (handle == NULL) {
+    return -1;
+  }
+  frame.id = TYCHE_DOMAIN_CREATE;
+  if (tyche_call(&frame) != 0) {
+    return -1;
+  }
+  *handle = frame.ret_1;
   return 0;
 }
 

@@ -1,7 +1,7 @@
 #include "ecs.h"
 #include "tyche_api.h"
 
-int ecs_read_size(index_t* size)
+int ecs_read_size(capa_index_t* size)
 {
   vmcall_frame_t frame;
   if (size == NULL) {
@@ -17,7 +17,7 @@ fail:
   return -1;
 }
 
-int ecs_read_entry(index_t idx, paddr_t* entry)
+int ecs_read_entry(capa_index_t idx, paddr_t* entry)
 {
   vmcall_frame_t frame;
   if (entry == NULL) {

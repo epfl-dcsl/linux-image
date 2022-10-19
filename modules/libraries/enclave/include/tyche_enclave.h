@@ -9,6 +9,8 @@
 #include <sys/ioctl.h>
 #endif
 
+#include "tyche_capabilities_types.h"
+
 // ———————————————————— Constants Defined in the Module ————————————————————— //
 #define TE_READ ((uint64_t)1 << 0)
 #define TE_WRITE ((uint64_t)1 << 1)
@@ -16,18 +18,19 @@
 #define TE_USER ((uint64_t)1 << 3)
 
 // —————————————————————— Types Exposed by the Library —————————————————————— //
-typedef uint64_t tyche_encl_handle_t;
+typedef domain_id_t tyche_encl_handle_t;
 
 /// Message type to create a new enclave.
 struct tyche_encl_create_t {
   tyche_encl_handle_t handle;
 };
 
-enum tyche_encl_mapping_t {
+typedef capability_type_t tyche_encl_mapping_t;
+/*enum tyche_encl_mapping_t {
   Confidential,
   Shared,
   PtEntry,
-};
+};*/
 
 /// Message type to add a new region.
 struct tyche_encl_add_region_t {
@@ -47,7 +50,7 @@ struct tyche_encl_add_region_t {
   uint64_t flags;
 
   /// Type of mapping: Confidential or Shared.
-  enum tyche_encl_mapping_t tpe;
+  tyche_encl_mapping_t tpe;
 
   /// Not read by the module, but can be used by user level libraries for
   /// extra information.

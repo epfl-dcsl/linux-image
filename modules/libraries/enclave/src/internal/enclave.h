@@ -32,7 +32,7 @@ struct region_t {
   uint64_t flags;
 
   /// Type of mapping: Confidential or Shared.
-  enum tyche_encl_mapping_t tpe;
+  tyche_encl_mapping_t tpe;
 
   /// List of corresponding physical pages.
   dll_list(struct pa_region_t, pas);
@@ -42,7 +42,7 @@ struct region_t {
 struct pa_region_t {
   uint64_t start;
   uint64_t end;
-  enum tyche_encl_mapping_t tpe;
+  tyche_encl_mapping_t tpe;
 
   dll_elem(struct pa_region_t, list);
   dll_elem(struct pa_region_t, globals);
