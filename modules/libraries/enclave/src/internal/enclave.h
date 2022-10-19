@@ -4,7 +4,7 @@
 #include <linux/types.h>
 
 #define _IN_MODULE
-#include "../../include/tyche_enclave.h"
+#include "tyche_enclave.h"
 #undef _IN_MODULE
 #include "dll.h"
 
@@ -57,7 +57,7 @@ struct enclave_t {
   tyche_encl_handle_t handle;
 
   /// Unique identifier within tyche.
-  uint64_t tyche_handle;
+  domain_id_t tyche_handle;
 
   /// The enclave's physical value of cr3.
   uint64_t cr3;

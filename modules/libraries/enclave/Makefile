@@ -11,7 +11,7 @@ LIB_CAPA=../../../programs/libs/capabilities/
 $(TARGET_MODULE)-objs := src/driver.o src/ioctl.o src/internal/enclave.o src/internal/process.o src/internal/mapper.o src/internal/tyche_vmcall.o $(LIB_PT)/src/lib.o $(LIB_PT)/src/x86_64_pt.o
 obj-m := $(TARGET_MODULE).o
 #$(TARGET_MODULE)-obs += $(LIB_PT)/libpts.o
-ccflags-y += -I$(src)/$(LIB_PT)/include -I$(src)/$(LIB_DLL)/include -I$(src)/$(LIB_CAPA)/include
+ccflags-y += -I$(src)/include -I$(src)/$(LIB_PT)/include -I$(src)/$(LIB_DLL)/include -I$(src)/$(LIB_CAPA)/include
 
 ## ——————————————————— Where to generate the build files ———————————————————— ##
 PWD:=$(shell pwd)

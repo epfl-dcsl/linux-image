@@ -4,9 +4,10 @@ all: enclave a.out
 ELF64=../../libs/elf64
 LOADER=../../libs/enclave
 DRIVER=../../../modules/libraries/enclave
+CAPA=../../libs/capabilities
 
 # All the includes
-INCLUDES=-I$(ELF64)/include -I$(LOADER)/include -I$(DRIVER)/include
+INCLUDES=-I$(ELF64)/include -I$(LOADER)/include -I$(DRIVER)/include -I$(CAPA)/include
 
 # Dynamic libraries
 DYN_LIBS= -l:encl_loader.so -lelf64

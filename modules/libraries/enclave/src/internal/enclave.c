@@ -306,12 +306,17 @@ int commit_enclave(tyche_encl_handle_t handle)
   if (build_enclave_cr3(encl)) {
     goto failure;
   }
-
+  
+  // All pages should be inside all_pages now.
   // Call tyche to split regions. 
+  pa_region = NULL;
+  dll_foreach(&(encl->all_pages), pa_region, globals) {
+    if (tyche_split_grant(encl, pa_region) != 0) {
+      goto failure;
+    }
+  }
   return 0;
 
-  // TODO Add all the pages to the enclave all_pages list.
-  // At the same time, check for overlaps.
 failure:
   // Delete all the pas.
   dll_foreach(&(encl->regions), region, list) {

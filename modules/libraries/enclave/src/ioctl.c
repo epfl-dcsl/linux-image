@@ -8,7 +8,7 @@
 #include "tyche_enclave_ioctl.h"
 
 #define _IN_MODULE
-#include "../include/tyche_enclave.h"
+#include "tyche_enclave.h"
 #undef _IN_MODULE
 
 #include "internal/enclave.h"
