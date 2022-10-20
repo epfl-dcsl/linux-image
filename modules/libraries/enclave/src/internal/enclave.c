@@ -81,7 +81,7 @@ static struct enclave_t* find_enclave(tyche_encl_handle_t handle)
   }
   // We could not find the enclave.
   if (!encl) {
-    pr_err("[TE]: Enclave not found in add_region.\n");
+    pr_err("[TE]: Enclave not found.\n");
     return NULL;
   }
   // Check that the task calling is the one that created the enclave.
@@ -159,6 +159,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   // Find the enclave.
   encl = find_enclave(region->handle);
   if (encl == NULL) {
+    pr_err("[TE]: unable to find enclave in add_region.\n");
     return -1;
   }
  
@@ -287,7 +288,8 @@ int commit_enclave(tyche_encl_handle_t handle)
   struct region_t* region = NULL;
   struct pa_region_t* pa_region = NULL;
   encl = find_enclave(handle);
-  if (encl == NULL) {
+  if (encl == NULL || current == NULL) {
+    pr_err("[TE]: unable to find enclave in commit_enclave.\n");
     return -1;
   }
 
@@ -295,18 +297,21 @@ int commit_enclave(tyche_encl_handle_t handle)
     pr_err("[TE]: The enclave cannot be commited by another pid.\n");
     return -1;
   }
-
+  
   dll_foreach(&(encl->regions), region, list) {
     // Collect the physical pages.
     if (walk_and_collect_region(region) != 0) {
+      pr_err("[TE]: failure in walk_and_collect!\n");
       goto failure; 
     }
   }
+
   // Create the cr3.
   if (build_enclave_cr3(encl)) {
+    pr_err("[TE]: failed to build enclave cr3.\n");
     goto failure;
   }
-  
+
   // All pages should be inside all_pages now.
   // Call tyche to split regions. 
   pa_region = NULL;
@@ -319,6 +324,7 @@ int commit_enclave(tyche_encl_handle_t handle)
 
 failure:
   // Delete all the pas.
+  region = NULL;
   dll_foreach(&(encl->regions), region, list) {
     delete_region_pas(region);
   }
@@ -328,12 +334,11 @@ failure:
     pa_region = pa_region->list.next;
     dll_remove(&(encl->pts), tmp, list);
     ptr = phys_to_virt((phys_addr_t)(pa_region->start)); 
-    vfree(ptr);
+    free_pages_exact(ptr, 0x1000);
     kfree(tmp);
   }
-  ptr = phys_to_virt((phys_addr_t)(encl->cr3));
-  vfree(ptr);
   encl->cr3 = 0;
+  pr_info("[TE]: deleted the enclave pages.\n");
   return -1;
 }
 

@@ -22,11 +22,15 @@ static void local_free(void* ptr)
   kfree(ptr);
 }
 
+static void local_print(const char *msg)
+{
+  printk(KERN_NOTICE "[CAPA]: %s",msg);
+}
+
 // —————————————————————— Loading/Unloading  functions —————————————————————— //
 static int __init tyche_capabilities_init(void)
 {
-  printk(KERN_INFO "Loading Tyche Capability LKM driver.");
-  return init_domain(local_allocator, local_free);
+  return init_domain(local_allocator, local_free, local_print);
 }
 
 static void __exit tyche_capabilities_exit(void)
@@ -43,6 +47,7 @@ int tc_create_domain(domain_id_t* handle)
 
 int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe)
 {
+
   return transfer_capa(dom, start, end, tpe);
 }
 // ————————————————————————— Module's Registration —————————————————————————— //

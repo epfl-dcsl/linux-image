@@ -2,23 +2,25 @@
 #include "tyche_api.h"
 
 // ———————————————————————————————— Globals ————————————————————————————————— //
-static domain_t local_domain;
+domain_t local_domain;
 
 // —————————————————————————————— Local types ——————————————————————————————— //
 
-int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
+int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t print)
 {
   capa_index_t i = 0;
   capa_index_t nb_capa = 0;
-  if (allocator == 0) {
+  if (allocator == 0 || deallocator == 0 || print == 0) {
     return -1;
   }
   local_domain.alloc = allocator;
   local_domain.dealloc = deallocator;
+  local_domain.print = print;
   dll_init_list(&(local_domain.capabilities));
 
   // Acquire the current domain's id.
   if (tyche_get_domain_id(&(local_domain.id)) != 0) {
+    local_domain.print("unable to get the domain id.\n");
     goto fail;
   }
   
@@ -31,15 +33,18 @@ int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator)
   for (i = TYCHE_ECS_FIRST_ENTRY; i < nb_capa; i++) {
     capability_t* capa = (capability_t*) local_domain.alloc(sizeof(capability_t));
     if (capa == NULL) {
+      local_domain.print("unable to allocate capa.\n");
       goto failure;
     }
     if (ecs_read_entry(i, &(capa->handle)) != 0) {
+      local_domain.print("unable to read ecs.\n");
       goto failure;
     }
     capa->index = i; 
     dll_init_elem(capa, list); 
     // Get the handle details.
     if (tyche_read_capa(capa->handle, &(capa->start), &(capa->end), &(capa->tpe)) != 0) {
+      local_domain.print("unable to read the capa.\n");
       goto failure;
     }
     
@@ -55,6 +60,7 @@ failure:
     local_domain.dealloc((void*)capa);
   }
 fail:
+  local_domain.print("failure to init domain.\n");
   return -1;
 }
 
@@ -75,16 +81,19 @@ capability_t* split_capa(capability_t* capa, paddr_t split_addr)
 {
   capability_t *split = NULL;
   if (capa == NULL) {
+    local_domain.print("capa null.\n");
     goto failure;
   }
   // Wrong capability.
   if (!dll_contains(capa->start, capa->end, split_addr)) {
+    local_domain.print("wrong capability, does not contain.\n");
     goto failure;
   }
 
   // Allocate the new capability.
   split = (capability_t*) local_domain.alloc(sizeof(capability_t));
   if (split == NULL) {
+    local_domain.print("split alloc failed.\n");
     goto failure;
   }
   split->start = split_addr;
@@ -94,6 +103,7 @@ capability_t* split_capa(capability_t* capa, paddr_t split_addr)
 
   // Call tyche for the split.
   if (tyche_split_capa(capa->handle, split_addr, &(split->handle)) != 0) {
+    local_domain.print("tyche rejected the split.\n");
     goto fail_dealloc;
   }
   
@@ -130,26 +140,30 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
 
   // Unable to find the capa.
   if (curr == NULL) {
+    local_domain.print("failed to find capa in transfer.\n");
     goto failure;
   }
 
   // We cannot grant something confidential if it is not confidential.
-  if (tpe <= Confidential && curr->tpe > Confidential)
-  {
+  if (tpe <= Confidential && curr->tpe > Confidential) {
+    local_domain.print("wrong type in transfer.\n");
     goto failure;
   }
   
   // Split the capability.
   split = split_capa(curr, start);
   if (split == NULL) {
+    local_domain.print("split failed in transfer.\n");
     goto failure;
   }
 
   // Do we need a three way split?
   if (split->end > end) {
     if (split_capa(split, end) == NULL) {
+      local_domain.print("second split failed.\n");
       goto failure;
     }
+    local_domain.print("\nSECOND SPLIT SUCCESS\n");
   } 
 
   // Now transfer with the right tpe.
@@ -162,6 +176,7 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
   }
   return 0;
 failure:
+  local_domain.print("failure in transfer.\n");
   return -1;
 }
 

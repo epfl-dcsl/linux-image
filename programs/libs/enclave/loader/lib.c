@@ -193,6 +193,11 @@ static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* 
       goto fail_unmap;
     }
   }
+
+  // Now commit.
+  if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_COMMIT, enclave->handle) != 0) {
+    goto fail_unmap;
+  } 
   // Everything went well.
   return 0;
 

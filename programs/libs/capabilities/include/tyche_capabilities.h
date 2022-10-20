@@ -21,6 +21,7 @@ typedef struct capability_t {
 
 typedef void* (*capa_alloc_t)(unsigned long size);
 typedef void (*capa_dealloc_t)(void* ptr);
+typedef void (*capa_dbg_print_t)(const char* msg);
 
 /// Represents the current domain's metadata.
 typedef struct domain_t {
@@ -30,17 +31,22 @@ typedef struct domain_t {
   // The allocator to use whenever we need a new structure.
   capa_alloc_t alloc;
   capa_dealloc_t dealloc;
+  capa_dbg_print_t print;
 
   // The list of used capabilities for this domain.
   dll_list(struct capability_t, capabilities);
 } domain_t;
+
+// ———————————————————————————————— Globals ————————————————————————————————— //
+
+extern domain_t local_domain;
 
 // —————————————————————————————————— API ——————————————————————————————————— //
 
 /// Initialize the local domain.
 /// This function enumerates the regions attributed to this domain and populates
 /// the local_domain.
-int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator);
+int init_domain(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t print);
 
 /// Creates a new domain.
 /// Sets the result inside the provided handle.

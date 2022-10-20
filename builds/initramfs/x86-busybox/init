@@ -25,5 +25,5 @@ cd home/tyche/drivers/tyche-capabilities
 sh tyche-capabilities.sh
 cd ../tyche-enclave 
 sh tyche_enclave.sh
-cd ..
+cd ../..
 exec /bin/sh

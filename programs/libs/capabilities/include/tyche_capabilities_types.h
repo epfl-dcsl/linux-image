@@ -6,7 +6,7 @@
 #endif
 
 /// Internal definition of our types so we can move to 32 bits.
-typedef unsigned long paddr_t;
+typedef long long unsigned int paddr_t;
 
 /// Internal definition of domain id.
 typedef unsigned long domain_id_t;

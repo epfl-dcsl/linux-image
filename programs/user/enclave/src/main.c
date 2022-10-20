@@ -32,5 +32,6 @@ int main(void) {
     fprintf(stderr, "Unable to load the enclave.\n");
     exit(1);
   } 
+  printf("We have a handle! %llx\n", handle);
   return 0;
 }

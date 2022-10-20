@@ -20,14 +20,15 @@ static int pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
   struct pa_region_t* pa_region = NULL;
   uint64_t phys_addr = 0;
   struct walker_info_t* info = (struct walker_info_t*)(walk->private);
-  printk(KERN_NOTICE "[PTE ENTRY]: %lx -- %lx | %lx\n", addr, next, next - addr);
 
   // Safety checks.
   if (info == NULL || info->region == NULL) {
     pr_err("[TE]: Unable to retrieve info in pte_entry.\n");
     goto failure;
   }
-  if (info->region->start > addr || info->region->end < addr) {
+  if (info->region->src > addr
+      || (info->region->src + (info->region->end - info->region->start)) < addr) {
+    pr_err("[PTE]: Start bigger than address or end less than addr.\n");
     goto failure_with_info;
   }
   if ((pte->pte & _PAGE_VALID) != _PAGE_VALID) {
@@ -42,6 +43,7 @@ static int pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
     pr_err("[TE]: Unable to allocate new pa_region!\n");
     goto failure_with_info;
   }
+
   pa_region->start = phys_addr;
   pa_region->end = phys_addr + PAGE_SIZE;
   pa_region->tpe = info->region->tpe;

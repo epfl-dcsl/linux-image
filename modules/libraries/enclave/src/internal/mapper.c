@@ -1,5 +1,6 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <linux/kernel.h>
 #include <asm/io.h>
 #include "enclave.h"
 #include "mapper.h"
@@ -26,7 +27,7 @@ static entry_t* allocate(void* ptr)
     return NULL;
   }
   
-  allocation = __vmalloc(PT_PAGE_SIZE, GFP_KERNEL);
+  allocation = alloc_pages_exact(PT_PAGE_SIZE, GFP_KERNEL);
   if (allocation == NULL) {
     return NULL;
   }
@@ -67,7 +68,7 @@ static entry_t* allocate(void* ptr)
 failure_remove:
   dll_remove(&(info->enclave->pts), region, list);
 failure_unmap:
-  vfree(allocation);
+  free_pages_exact(allocation, PT_PAGE_SIZE);
   return NULL;
 }
 
