@@ -33,5 +33,7 @@ int main(void) {
     exit(1);
   } 
   printf("We have a handle! %llx\n", handle);
+  // TODO get it from the enclave loader.
+  library->vmcall_gate(handle, (target_func_t)0x401000, shared);
   return 0;
 }

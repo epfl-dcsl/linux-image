@@ -46,6 +46,11 @@ struct pa_region_t {
 
   dll_elem(struct pa_region_t, list);
   dll_elem(struct pa_region_t, globals);
+
+  // When the pa_region is in all_pages, i.e., added with globals,
+  // it is used by the driver to split a capability.
+  // The handle references the new capability to access this region.
+  paddr_t handle;
 };
 
 /// Describes an enclave.
@@ -81,6 +86,7 @@ int add_enclave(tyche_encl_handle_t handle);
 int add_region(struct tyche_encl_add_region_t* region);
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region);
 int commit_enclave(tyche_encl_handle_t handle);
+int delete_enclave(tyche_encl_handle_t handle);
 
 // —————————————————————————— Enclave Internal API —————————————————————————— //
 int add_merge_global(struct enclave_t* enclave, struct pa_region_t* region);

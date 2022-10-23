@@ -61,7 +61,10 @@ static entry_t* allocate(void* ptr)
   dll_init_elem(in_all_pages, globals);
   
   // After that call, it is unsafe to access in_all_pages.
-  add_merge_global(info->enclave, in_all_pages);
+  if (add_merge_global(info->enclave, in_all_pages) != 0) {
+    pr_err("[TE]: Failure to add a page in enclave_pts from allocate.\n");
+    goto failure_remove;
+  }
 
   // return the value
   return page;
@@ -197,7 +200,6 @@ int build_enclave_cr3(struct enclave_t* encl) {
       copy->tpe = curr->tpe;
       dll_init_elem(copy, list);
       dll_init_elem(copy, globals);
-
       if (add_merge_global(encl, copy) !=0 ) {
         pr_err("[TE]: unable to add and merge the region's pas.\n");
         return -1;

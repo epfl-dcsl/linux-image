@@ -21,7 +21,7 @@
 #define RAX	(112)
 #define REG_END (120)
 
-#define TRANSITION 0x999
+#define TRANSITION $0x999
 
 .text
 

@@ -8,12 +8,11 @@
 #define TYCHE_DOMAIN_CREATE 0x101;
 #define TYCHE_DOMAIN_SEAL 0x102;
 #define TYCHE_DOMAIN_GRANT_REGION 0x103;
+#define TYCHE_DOMAIN_SHARE_REGION 0x104
 #define TYCHE_REGION_SPLIT 0x200;
 #define TYCHE_REGION_GET_INFO 0x201;
 #define TYCHE_CONFIG_NB_REGIONS 0x400;
 #define TYCHE_CONFIG_READ_REGION 0x401;
-
-#define TYCHE_SHARE_CAPA 0xdeadbeef
 
 //TODO we need free spots too.
 
@@ -41,7 +40,7 @@ int tyche_get_domain_id(domain_id_t* domain);
 int tyche_create_domain(domain_id_t* handle);
 int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_type_t* tpe);
 int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle);
-int tyche_grant_capa(domain_id_t target, paddr_t handle);
-int tyche_share_capa(domain_id_t target, paddr_t handle, capability_type_t tpe);
+int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
+int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
 
 #endif

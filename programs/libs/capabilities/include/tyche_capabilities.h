@@ -61,8 +61,9 @@ capability_t* split_capa(capability_t* capa, paddr_t split_addr);
 /// This requires to check, for example, whenever tpe is confidential,
 /// to ensure that the corresponding parent handle is solely owned by the local
 /// domain.
+/// The resulting new capability's handle is returned in new_handle.
 /// @warn: this function implements both grant and share.
-int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe);
+int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe, paddr_t* new_handle);
 
 /// Merges the referenced capability defined by start/end into the local domain.
 int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t tpe);

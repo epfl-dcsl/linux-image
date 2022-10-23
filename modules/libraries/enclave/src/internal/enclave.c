@@ -30,6 +30,7 @@ static int overlap(uint64_t s1, uint64_t e1, uint64_t s2, uint64_t e2)
   return 0;
 fail:
   printk(KERN_NOTICE "[TE]: 1: %llx - %llx ; 2: %llx - %llx\n", s1, e1, s2, e2);
+  dump_stack();
   return 1;
 }
 
@@ -190,6 +191,7 @@ int add_region(struct tyche_encl_add_region_t* region)
   for (reg_iter = encl->regions.head; reg_iter != NULL;) {
     if (overlap(reg_iter->start, reg_iter->end, e_reg->start, e_reg->end)) {
       pr_err("[TE]: Virtual address overlap detected.\n");
+      dump_stack();
       goto failure;
     } 
 
@@ -316,6 +318,7 @@ int commit_enclave(tyche_encl_handle_t handle)
   // Call tyche to split regions. 
   pa_region = NULL;
   dll_foreach(&(encl->all_pages), pa_region, globals) {
+    // The call will set the handle in the pa_region.
     if (tyche_split_grant(encl, pa_region) != 0) {
       goto failure;
     }
@@ -366,6 +369,17 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
   }
   // All good, we add at the tail of the list.
   dll_add(&region->pas, *pa_region, list);
+  return 0;
+}
+
+int delete_enclave(tyche_encl_handle_t handle)
+{
+  //TODO
+  //1. Collect all the handles and re-merge.
+  //2. delete all the pas in all_pages.
+  //3. delete all the pas in regions and all the regions.
+  //4. remove the enclave from the list.
+  //5 delete the enclave.
   return 0;
 }
 

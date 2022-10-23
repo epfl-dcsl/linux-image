@@ -1,5 +1,11 @@
 all: linux-embedded
 
+refresh:
+	make -B -C modules/libraries/enclave install
+	make -B -C modules/libraries/tyche-capabilities install
+	make -B -C programs/user/enclave install
+	make linux-embedded
+
 linux-embedded:
 	./scripts/setup.sh repack
 	./scripts/build.sh

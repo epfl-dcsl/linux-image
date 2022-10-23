@@ -117,7 +117,7 @@ failure:
   return NULL;
 }
 
-int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe)
+int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe, paddr_t* new_handle)
 {
   // 1. Find the capa.
   // 2. Split.
@@ -126,6 +126,9 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
   capability_t* curr = NULL;
   capability_t* split = NULL;
   // Quick checks.
+  if (new_handle == NULL) {
+    goto failure;
+  }
   if (start >= end || tpe > Other
       || ((start % ALIGNMENT) != 0) || ((end % ALIGNMENT) != 0)) {
     goto failure;
@@ -163,16 +166,21 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
       local_domain.print("second split failed.\n");
       goto failure;
     }
-    local_domain.print("\nSECOND SPLIT SUCCESS\n");
-  } 
+  }
 
   // Now transfer with the right tpe.
   if (tpe <= Confidential) {
-    tyche_grant_capa(dom, split->handle);
+    if(tyche_grant_capa(dom, split->handle, new_handle) != 0) {
+      local_domain.print("Failure to grant capa.\n");
+      goto failure;
+    }
     dll_remove(&(local_domain.capabilities), split, list);
     local_domain.dealloc((void*)split);
   } else {
-    tyche_share_capa(dom, split->handle, tpe);
+    if(tyche_share_capa(dom, split->handle, new_handle) != 0) {
+      local_domain.print("Failure to gran capa.\n");
+      goto failure;
+    }
   }
   return 0;
 failure:

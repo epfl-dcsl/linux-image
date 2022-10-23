@@ -46,12 +46,21 @@
     (elem)->name.next = (previous)->name.next;    \
     (elem)->name.prev = (previous);               \
     (previous)->name.next = (elem);               \
+    if ((elem)->name.next != 0) {                 \
+      (elem)->name.next->name.prev = (elem);      \
+    }                                             \
+    if ((list)->tail == (previous)) {             \
+      (list)->tail = elem;                        \
+    }                                             \
   } while (0);
 
 #define dll_add_first(list, elem, name) \
   do {                                  \
     (elem)->name.prev = 0;              \
     (elem)->name.next = (list)->head;   \
+    if ((list)->head != 0) {            \
+      (list)->head->name.prev = (elem); \
+    }                                   \
     (list)->head = (elem);              \
     if ((list)->tail == 0) {            \
       (list)->tail = (elem);            \
@@ -78,6 +87,6 @@
 
 #define dll_contains(start, end, val) ((start <= val) && (val < end))
 
-#define dll_overlap(s1, e1, s2, e2) (!(((s1 <= s2) && (s2 < e1)) || ((s2 <= s1) && (s1 < e2))))
+#define dll_overlap(s1, e1, s2, e2) ((((s1 <= s2) && (s2 < e1)) || ((s2 <= s1) && (s1 < e2))))
 
 #endif

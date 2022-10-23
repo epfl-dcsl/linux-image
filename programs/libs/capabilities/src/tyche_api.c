@@ -72,12 +72,31 @@ int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_typ
 int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle)
 {
   vmcall_frame_t frame;
+  int result = 0;
   if (new_handle == NULL) {
     return -1;
   }
   frame.id= TYCHE_REGION_SPLIT;
   frame.value_1 = handle;
   frame.value_2 = split_addr;
+  result = tyche_call(&frame);
+  if (result != 0) {
+    return result;
+  }
+  *new_handle = frame.ret_1;
+  return 0;
+}
+
+int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
+{
+  //We should change that.
+  vmcall_frame_t frame;
+  if (new_handle == NULL) {
+    return -1;
+  }
+  frame.id = TYCHE_DOMAIN_GRANT_REGION;
+  frame.value_1 = target;
+  frame.value_2 = handle;
   if (tyche_call(&frame) != 0) {
     return -1;
   }
@@ -85,28 +104,18 @@ int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle)
   return 0;
 }
 
-int tyche_grant_capa(domain_id_t target, paddr_t handle)
+int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
 {
-  //We should change that.
   vmcall_frame_t frame;
-  frame.id = TYCHE_DOMAIN_GRANT_REGION;
+  if (new_handle == NULL) {
+    return -1;
+  }
+  frame.id = TYCHE_DOMAIN_SHARE_REGION;
   frame.value_1 = target;
   frame.value_2 = handle;
   if (tyche_call(&frame) != 0) {
     return -1;
   }
-  return 0;
-}
-
-int tyche_share_capa(domain_id_t target, paddr_t handle, capability_type_t tpe)
-{
-  vmcall_frame_t frame;
-  frame.id = TYCHE_SHARE_CAPA;
-  frame.value_1 = target;
-  frame.value_2 = handle;
-  frame.value_3 = tpe;
-  if (tyche_call(&frame) != 0) {
-    return -1;
-  }
+  *new_handle = frame.ret_1;
   return 0;
 }
