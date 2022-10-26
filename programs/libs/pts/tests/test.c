@@ -159,6 +159,10 @@ void test_boundary_map(pt_profile_t* profile)
   virt_addr_t end = {1, 0, 1, 2};
   addr_t s = create_virt_addr(start);
   addr_t e = create_virt_addr(end);
+  TEST(get_index(s, PT_PML4, profile) == 1);
+  TEST(get_index(s, PT_PGD, profile) == 0);
+  TEST(get_index(s, PT_PMD, profile) == 0);
+  TEST(get_index(s, PT_PTE, profile) == 510);
   TEST(pt_walk_page_range(extra->root, PT_PML4, s, e, profile) == 0); 
   TEST(extra->invoc_count == 4);
   LOG("Done mapping over a boundary");
@@ -171,12 +175,27 @@ void test_boundary_map(pt_profile_t* profile)
   LOG("Done walking over a boundary");
 }
 
+void test_constants(pt_profile_t* profile)
+{
+  TEST(profile != NULL);
+  TEST(profile->shifts[0] == 12);
+  TEST(profile->shifts[1] == (12 + 9));
+  TEST(profile->shifts[2] == (12 + 9 + 9));
+  TEST(profile->shifts[3] == (12 + 9 + 9 + 9));
+
+  TEST(profile->masks[0] == (511ULL << 12));
+  TEST(profile->masks[1] == (511ULL << (12+9)));
+  TEST(profile->masks[2] == (511ULL << (12+9+9)));
+  TEST(profile->masks[3] == (511ULL << (12 + 9 + 9 + 9)));
+}
+
 int main(void) {
   LOG("TESTING X86_64 PTs");
   init_allocator();
   pt_profile_t my_profile = x86_64_profile;
   extras_t extra = {0, PT_PP | PT_USR | PT_RW | PT_NX, 0};
   my_profile.extras = (void*) &extra;
+  test_constants(&my_profile);
   test_simple_map(&my_profile);
   test_boundary_map(&my_profile);
   return 0;

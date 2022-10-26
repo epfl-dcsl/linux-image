@@ -19,8 +19,9 @@ callback_action_t x86_64_how_visit_leaves(entry_t* entry, level_t level, pt_prof
     return SKIP; 
   }
   // We have a Giant or Huge mapping, visit the node.
+  // -> TODO there is something wrong here.
   if (level == PT_PTE || ((level == PT_PGD || level == PT_PMD) &&
-      ((*entry & PT_PAGE_PAT_LARGE) == PT_PAGE_PAT_LARGE))) {
+      ((*entry & PT_PAGE_PSE) == PT_PAGE_PSE))) {
     return VISIT;
   }
   return WALK;

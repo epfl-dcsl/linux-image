@@ -1,7 +1,7 @@
 #include "pts_api.h"
 
 /// From a VA addr and a level, get the current index.
-static index_t get_index(addr_t addr, level_t level, pt_profile_t* profile)
+index_t get_index(addr_t addr, level_t level, pt_profile_t* profile)
 {
   return ((addr & profile->masks[level]) >> profile->shifts[level]);
 }

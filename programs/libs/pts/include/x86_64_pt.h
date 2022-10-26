@@ -13,36 +13,82 @@
 // ——————————————————————————— Page Configuration ——————————————————————————— //
 /* PT_PAGE_SHIFT determines the page size */
 
-#define PT_VIRT_MASK_SHIFT 47UL
-#define PT_VIRT_MASK ((1UL << PT_VIRT_MASK_SHIFT) - 1UL)
+/// Hardware sizes define virtual addresses as being (last index is 47),
+/// and physical address spaces as 52.
+#define PT_VIRT_WIDTH 48ULL
+#define PT_PHYS_WIDTH 52ULL
 
-#define PT_NB_ENTRIES 512UL
-#define PT_ENTRY_MASK 511UL
+/// Valid virtual addresses are 48 bits, valid physical ones 52.
+#define PT_VIRT_MASK ((1ULL << PT_VIRT_WIDTH) - 1ULL)
+#define PT_PHYS_MASK ((1ULL << PT_PHYS_WIDTH) - 1ULL)
 
-#define PT_PHYS_MASK_SHIFT 52UL
-#define PT_PHYS_MASK ((1UL << PT_PHYS_MASK_SHIFT) - 1UL)
-#define PT_PAGE_SHIFT 12UL
-#define PT_PAGE_SIZE (PT_AC(1, UL) << PT_PAGE_SHIFT)
-#define PT_PAGE_MASK ((PT_ENTRY_MASK << PT_PAGE_SHIFT) & PT_VIRT_MASK)
+/// The smallest granule of memory is a page.
+#define PT_PAGE_WIDTH 12ULL
+#define PT_PAGE_SIZE (1ULL << PT_PAGE_WIDTH)
+#define PT_PAGE_ALIGN (PT_PAGE_SIZE - 1ULL)
 
-#define PT_PML4_SHIFT 39UL
-#define PT_PML4_PAGE_SIZE (PT__AC(1, UL) << PT_PML4_SHIFT)
-#define PT_PML4_PAGE_MASK ((PT_ENTRY_MASK << PT_PML4_SHIFT) & PT_VIRT_MASK)
+/// x86 64 has a 4-level page table.
+#define PT_PML4 3
+#define PT_PGD 2
+#define PT_PMD 1
+#define PT_PTE 0
 
-#define PT_PGD_SHIFT 30UL
-#define PT_PGD_PAGE_SIZE (PT__AC(1, UL) << PT_PGD_SHIFT)
-#define PT_PGD_PAGE_MASK ((PT_ENTRY_MASK << PT_PGD_SHIFT) & PT_VIRT_MASK)
+/// x86 64 has 512 entries per level table, i.e., 9 bits (511) to index.
+#define PT_NB_ENTRIES 512ULL
+#define PT_ENTRY_MASK 511ULL
+#define PT_ENTRY_BIT_SIZE 9ULL
 
-#define PT_PMD_SHIFT 21UL
-#define PT_PMD_PAGE_SIZE (PT_AC(1, UL) << PT_PMD_SHIFT)
-#define PT_PMD_PAGE_MASK ((PT_ENTRY_MASK << PT_PMD_SHIFT) & PT_VIRT_MASK)
+/// x86 shifts for page table level masks.
+#define PT_PTE_SHIFT 12ULL
+#define PT_PMD_SHIFT (PT_PTE_SHIFT + PT_ENTRY_BIT_SIZE)
+#define PT_PGD_SHIFT (PT_PMD_SHIFT + PT_ENTRY_BIT_SIZE)
+#define PT_PML4_SHIFT (PT_PGD_SHIFT + PT_ENTRY_BIT_SIZE)
 
-#define PT_PTE_SHIFT PT_PAGE_SHIFT
-#define PT_PTE_PAGE_SIZE PT_PAGE_SIZE
-#define PT_PTE_PAGE_MASK PT_PAGE_MASK
+/// A mask is nine 1's shifted to the left by the level's shift.
+#define PT_PTE_PAGE_MASK (PT_ENTRY_MASK << PT_PTE_SHIFT)
+#define PT_PMD_PAGE_MASK (PT_ENTRY_MASK << PT_PMD_SHIFT)
+#define PT_PGD_PAGE_MASK (PT_ENTRY_MASK << PT_PGD_SHIFT)
+#define PT_PML4_PAGE_MASK (PT_ENTRY_MASK << PT_PML4_SHIFT)
 
-#define PT_VIRT_PAGE_MASK (((signed long)PT_PAGE_MASK) & PT_VIRT_MASK)
-#define PT_PHYS_PAGE_MASK (((signed long)PT_PAGE_MASK) & PT_PHYS_MASK)
+/// Other granules for pages.
+#define PT_PMD_PAGE_SIZE (1ULL << PT_PMD_SHIFT)
+#define PT_PGD_PAGE_SZIE (1ULL << PT_PGD_SHIFT)
+
+/// Page table masks
+#define PT_VIRT_PAGE_MASK (PT_VIRT_MASK - PT_PAGE_ALIGN)
+#define PT_PHYS_PAGE_MASK (PT_PHYS_MASK - PT_PAGE_ALIGN)
+
+//#define PT_VIRT_MASK_SHIFT 48ULL
+//#define PT_VIRT_MASK ((1ULL << PT_VIRT_MASK_SHIFT) - 1ULL)
+//
+//#define PT_NB_ENTRIES 512ULL
+//#define PT_ENTRY_MASK 511ULL
+//
+//#define PT_PHYS_MASK_SHIFT 52ULL
+//#define PT_PHYS_MASK ((1ULL << PT_PHYS_MASK_SHIFT) - 1ULL)
+//#define PT_PAGE_SHIFT 12ULL
+//#define PT_PAGE_SIZE (PT_AC(1, ULL) << PT_PAGE_SHIFT)
+//#define PT_PAGE_MASK ((1ULL << PT_PAGE_SHIFT) - 1ULL)
+//
+//#define PT_PML4_SHIFT 39ULL
+//#define PT_PML4_PAGE_SIZE (PT__AC(1, ULL) << PT_PML4_SHIFT)
+//#define PT_PML4_PAGE_MASK ((PT_ENTRY_MASK << PT_PML4_SHIFT) & PT_VIRT_MASK)
+//
+//#define PT_PGD_SHIFT 30ULL
+//#define PT_PGD_PAGE_SIZE (PT__AC(1, ULL) << PT_PGD_SHIFT)
+//#define PT_PGD_PAGE_MASK ((PT_ENTRY_MASK << PT_PGD_SHIFT) & PT_VIRT_MASK)
+//
+//#define PT_PMD_SHIFT 21ULL
+//#define PT_PMD_PAGE_SIZE (PT_AC(1, ULL) << PT_PMD_SHIFT)
+//#define PT_PMD_PAGE_MASK ((PT_ENTRY_MASK << PT_PMD_SHIFT) & PT_VIRT_MASK)
+//
+//#define PT_PTE_SHIFT PT_PAGE_SHIFT
+//#define PT_PTE_PAGE_SIZE PT_PAGE_SIZE
+//#define PT_PTE_PAGE_MASK PT_PAGE_MASK
+//
+//#define PT_VIRT_PAGE_MASK (((unsigned long long)PT_PAGE_MASK) & PT_VIRT_MASK)
+////#define PT_PHYS_PAGE_MASK (((unsigned long long)PT_PAGE_MASK) & PT_PHYS_MASK)
+//#define PT_PHYS_PAGE_MASK (PT_PHYS_MASK - PT_PAGE_MASK)
 
 // ——————————————————————————— Page bits for flags —————————————————————————— //
 
@@ -108,13 +154,6 @@
 #define PT_DIRT PT_PAGE_DIRTY
 #define PT_GLOB PT_PAGE_GLOBAL
 #define PT_NX PT_PAGE_NX
-
-// ————————————————————————————————— Levels ————————————————————————————————— //
-
-#define PT_PML4 3
-#define PT_PGD 2
-#define PT_PMD 1
-#define PT_PTE 0
 
 // ———————————————————————————— Default profile ————————————————————————————— //
 extern const pt_profile_t x86_64_profile;

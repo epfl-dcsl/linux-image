@@ -118,5 +118,6 @@ typedef struct pt_profile_t {
 /// Goes through a range of VAs using the profile.
 /// Returns -1 in case of an error, 0 if success.
 int pt_walk_page_range(entry_t root, level_t level, addr_t start, addr_t end, pt_profile_t* profile);
+index_t get_index(addr_t addr, level_t level, pt_profile_t* profile);
 
 #endif
