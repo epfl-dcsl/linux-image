@@ -6,6 +6,7 @@
 
 #include "internal/process.h"
 #include "tyche_enclave_ioctl.h"
+#include "dbg/dbg.h"
 
 #define _IN_MODULE
 #include "tyche_enclave.h"
@@ -104,13 +105,19 @@ int tyche_enclave_open(struct inode *inode, struct file *file)
 
 long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-  tyche_encl_handle_t encl;
   struct tyche_encl_create_t handle;
   struct tyche_encl_add_region_t region;
+  struct tyche_encl_commit_t commit;
+  uint64_t dest = 0;
   switch(cmd)
   {
     case TYCHE_ENCLAVE_DBG:
-      pr_info("[TE]: Successfully invoked TYCHE_ENCLAVE_DBG.\n");
+      pr_info("[TE]: Invoked TYCHE_ENCLAVE_DBG.\n");
+      dest = (uint64_t) debugging_cr3();
+      if (copy_to_user((uint64_t*)arg, &dest, sizeof(uint64_t))) {
+        pr_err("[TE]: Debugging error.\n");
+        return -1;
+      }
       break;
     case TYCHE_ENCLAVE_CREATE:
       // TODO replace this with a tyche vmcall that yields an address
@@ -135,7 +142,7 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       //CHANGE THIS.
       if (copy_from_user(&region, (struct tyche_encl_add_region_t*)arg, sizeof(region)))
       {
-        pr_err("[TE]: Error copying handle from user space.\n");
+        pr_err("[TE]: Error copying region from user space.\n");
         return -1;
       }
      
@@ -146,12 +153,30 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       }
       break;
     case TYCHE_ENCLAVE_COMMIT:
-      encl = (tyche_encl_handle_t) arg;
-      if (commit_enclave(encl) == -1) {
+      if (copy_from_user(&commit, (struct tyche_encl_commit_t*)arg, sizeof(commit))) {
+        pr_err("[TE]: failed to copy commit message.\n");
+      }
+      if (commit_enclave(&commit) == -1) {
         pr_err("[TE]: Failed to commit the enclave!\n");
         return -1;
       } 
+      // Copy back the result.
+      if (copy_to_user((struct tyche_encl_commit_t*)arg, &commit, sizeof(commit))) {
+        pr_err("[TE]: Failed to copy back the commit result.\n");
+        return -1;
+      }
       break;
+    case TYCHE_ENCLAVE_ADD_STACK:
+      if (copy_from_user(&region, (struct tyche_encl_add_region_t*) arg, sizeof(region)))
+      {
+        pr_err("[TE]: error copying stack region from user space.\n");
+        return -1;
+      }
+      if (add_stack_region(&region) == -1) {
+        pr_err("[TE]: unable to add the stack region.\n");
+        return -1;
+      }  
+      break; 
     default:
       pr_err("[TE]: Wrong command for tyche enclave driver.\n");
       return -1;

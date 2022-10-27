@@ -278,18 +278,37 @@ failure:
   return -1;
 }
 
+int add_stack_region(struct tyche_encl_add_region_t* region)
+{
+  struct enclave_t* encl = NULL; 
+  if (add_region(region) != 0) {
+    return -1;
+  }
+  encl = find_enclave(region->handle);
+  if (encl == NULL) {
+    pr_err("[TE]: unable to find the enclave.\n");
+    return -1;
+  }
+  encl->stack = region->end;
+  return 0;
+}
+
 /// Done adding virtual regions to an enclave.
 /// Commit the regions and find the corresponding physical pages.
 /// @warn: Not the most efficient implementation, we go through the list
 /// several times. We could merge all of this within the loop.
 /// For now, keep it this way to ease debugging and readability.
-int commit_enclave(tyche_encl_handle_t handle)
+int commit_enclave(struct tyche_encl_commit_t* commit)
 {
   void * ptr = NULL;
   struct enclave_t* encl = NULL; 
   struct region_t* region = NULL;
   struct pa_region_t* pa_region = NULL;
-  encl = find_enclave(handle);
+  if (commit == NULL) {
+    pr_err("[TE]: Null commit message.\n");
+    return -1;
+  }
+  encl = find_enclave(commit->handle);
   if (encl == NULL || current == NULL) {
     pr_err("[TE]: unable to find enclave in commit_enclave.\n");
     return -1;
@@ -323,6 +342,14 @@ int commit_enclave(tyche_encl_handle_t handle)
       goto failure;
     }
   }
+
+  // Now seal the enclave. 
+  if (tyche_seal_enclave(encl) != 0) {
+    goto failure;
+  }
+
+  // Give back the handle for the domain.
+  commit->domain_handle = encl->tyche_handle;
   return 0;
 
 failure:

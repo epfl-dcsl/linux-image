@@ -12,10 +12,10 @@
 #include "tyche_capabilities_types.h"
 
 // ———————————————————— Constants Defined in the Module ————————————————————— //
-#define TE_READ ((uint64_t)1 << 0)
-#define TE_WRITE ((uint64_t)1 << 1)
-#define TE_EXEC ((uint64_t)1 << 2)
-#define TE_USER ((uint64_t)1 << 3)
+#define TE_READ ((uint64_t)(1ULL << 0))
+#define TE_WRITE ((uint64_t)(1ULL << 1))
+#define TE_USER ((uint64_t)(1ULL << 2))
+#define TE_EXEC ((uint64_t)(1ULL << 3))
 
 // —————————————————————— Types Exposed by the Library —————————————————————— //
 typedef domain_id_t tyche_encl_handle_t;
@@ -57,10 +57,20 @@ struct tyche_encl_add_region_t {
   void* extra;
 };
 
+/// Structure of the commit message.
+struct tyche_encl_commit_t {
+  /// The driver handle.
+  tyche_encl_handle_t handle;
+
+  /// The handle to reference the domain.
+  domain_id_t domain_handle;
+};
+
 // ——————————————————————————— Tyche Enclave IOCTL API —————————————————————— //
-#define TYCHE_ENCLAVE_DBG _IO('a', 'a')
+#define TYCHE_ENCLAVE_DBG _IOR('a', 'a', uint64_t*)
 #define TYCHE_ENCLAVE_CREATE _IOR('a', 'b', struct tyche_encl_create_t*)
 #define TYCHE_ENCLAVE_ADD_REGION _IOW('a', 'c', struct tyche_encl_add_region_t*)
-#define TYCHE_ENCLAVE_COMMIT _IOW('a', 'd', tyche_encl_handle_t)
+#define TYCHE_ENCLAVE_COMMIT _IOWR('a', 'd', struct tyche_encl_commit_t*)
+#define TYCHE_ENCLAVE_ADD_STACK _IOW('a', 'e', struct tyche_encl_add_region_t*)
 
 #endif

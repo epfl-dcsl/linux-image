@@ -31,6 +31,7 @@ static entry_t* allocate(void* ptr)
   if (allocation == NULL) {
     return NULL;
   }
+  memset(allocation, 0, PT_PAGE_SIZE);
   // Get the physical address.
   page = (entry_t*) virt_to_phys(allocation); 
 
@@ -73,6 +74,24 @@ failure_remove:
 failure_unmap:
   free_pages_exact(allocation, PT_PAGE_SIZE);
   return NULL;
+}
+
+static entry_t translate_flags(uint64_t flags)
+{
+  entry_t translation = 0;
+  if (flags != 0) {
+    translation |= PT_PP;
+  }
+  if ((flags & TE_EXEC) == 0) {
+    translation |= PT_NX;
+  }
+  if ((flags & TE_WRITE) == TE_WRITE) {
+    translation |= PT_RW;
+  }
+  if ((flags & TE_USER) == TE_USER) {
+    translation |= PT_USR;
+  }
+  return translation;
 }
 
 callback_action_t default_mapper(entry_t* entry, level_t lvl, struct pt_profile_t* profile)
@@ -125,9 +144,9 @@ callback_action_t default_mapper(entry_t* entry, level_t lvl, struct pt_profile_
 // Mapping a page.
 entry_page:
   *entry = (info->pa_region->start & PT_PHYS_PAGE_MASK)
-    | info->region->flags;
+    | translate_flags(info->region->flags) | 0x60;
   if (is_huge) {
-    *entry |= PT_PAGE_PAT_LARGE;
+    *entry |= PT_PAGE_PSE;
   }
   // Move to the next region.
   info->pa_region = info->pa_region->list.next;
@@ -135,7 +154,7 @@ entry_page:
 // Allocating a new entry
 normal_page:
   new_page = profile->allocate(profile->extras);
-  *entry = (((entry_t)new_page) &PT_PHYS_PAGE_MASK) | info->intermed_flags;
+  *entry = (((entry_t)new_page)) | info->intermed_flags;
   return WALK;
 }
 
@@ -149,7 +168,7 @@ static int map_region(struct region_t* region, pt_profile_t* profile) {
   // We walk the physical page exactly in the same order we collected them.
   info->pa_region = region->pas.head;
   // Default flags for intermediary level mappings.
-  info->intermed_flags = PT_PP | PT_RW | PT_ACC | PT_NX;
+  info->intermed_flags = PT_PP | PT_RW | PT_ACC | PT_USR | PT_DIRT;//| PT_NX;
   return pt_walk_page_range(info->enclave->cr3, PT_PML4, region->start, region->end, profile);
 }
 

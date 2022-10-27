@@ -67,6 +67,9 @@ struct enclave_t {
   /// The enclave's physical value of cr3.
   uint64_t cr3;
 
+  /// The enclave's stack.
+  uint64_t stack;
+
   /// Enclaves belong to a list.
   dll_elem(struct enclave_t, list);
 
@@ -84,8 +87,9 @@ struct enclave_t {
 void enclave_init(void);
 int add_enclave(tyche_encl_handle_t handle);
 int add_region(struct tyche_encl_add_region_t* region);
+int add_stack_region(struct tyche_encl_add_region_t* region);
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region);
-int commit_enclave(tyche_encl_handle_t handle);
+int commit_enclave(struct tyche_encl_commit_t* handle);
 int delete_enclave(tyche_encl_handle_t handle);
 
 // —————————————————————————— Enclave Internal API —————————————————————————— //
