@@ -187,6 +187,11 @@ void test_constants(pt_profile_t* profile)
   TEST(profile->masks[1] == (511ULL << (12+9)));
   TEST(profile->masks[2] == (511ULL << (12+9+9)));
   TEST(profile->masks[3] == (511ULL << (12 + 9 + 9 + 9)));
+
+  TEST(PT_PP == 1);
+  TEST(PT_RW == 2);
+  TEST(PT_USR == 4);
+  TEST(PT_NX == (1ULL << 63));
 }
 
 int main(void) {

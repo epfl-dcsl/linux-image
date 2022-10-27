@@ -52,43 +52,11 @@
 
 /// Other granules for pages.
 #define PT_PMD_PAGE_SIZE (1ULL << PT_PMD_SHIFT)
-#define PT_PGD_PAGE_SZIE (1ULL << PT_PGD_SHIFT)
+#define PT_PGD_PAGE_SIZE (1ULL << PT_PGD_SHIFT)
 
 /// Page table masks
 #define PT_VIRT_PAGE_MASK (PT_VIRT_MASK - PT_PAGE_ALIGN)
 #define PT_PHYS_PAGE_MASK (PT_PHYS_MASK - PT_PAGE_ALIGN)
-
-//#define PT_VIRT_MASK_SHIFT 48ULL
-//#define PT_VIRT_MASK ((1ULL << PT_VIRT_MASK_SHIFT) - 1ULL)
-//
-//#define PT_NB_ENTRIES 512ULL
-//#define PT_ENTRY_MASK 511ULL
-//
-//#define PT_PHYS_MASK_SHIFT 52ULL
-//#define PT_PHYS_MASK ((1ULL << PT_PHYS_MASK_SHIFT) - 1ULL)
-//#define PT_PAGE_SHIFT 12ULL
-//#define PT_PAGE_SIZE (PT_AC(1, ULL) << PT_PAGE_SHIFT)
-//#define PT_PAGE_MASK ((1ULL << PT_PAGE_SHIFT) - 1ULL)
-//
-//#define PT_PML4_SHIFT 39ULL
-//#define PT_PML4_PAGE_SIZE (PT__AC(1, ULL) << PT_PML4_SHIFT)
-//#define PT_PML4_PAGE_MASK ((PT_ENTRY_MASK << PT_PML4_SHIFT) & PT_VIRT_MASK)
-//
-//#define PT_PGD_SHIFT 30ULL
-//#define PT_PGD_PAGE_SIZE (PT__AC(1, ULL) << PT_PGD_SHIFT)
-//#define PT_PGD_PAGE_MASK ((PT_ENTRY_MASK << PT_PGD_SHIFT) & PT_VIRT_MASK)
-//
-//#define PT_PMD_SHIFT 21ULL
-//#define PT_PMD_PAGE_SIZE (PT_AC(1, ULL) << PT_PMD_SHIFT)
-//#define PT_PMD_PAGE_MASK ((PT_ENTRY_MASK << PT_PMD_SHIFT) & PT_VIRT_MASK)
-//
-//#define PT_PTE_SHIFT PT_PAGE_SHIFT
-//#define PT_PTE_PAGE_SIZE PT_PAGE_SIZE
-//#define PT_PTE_PAGE_MASK PT_PAGE_MASK
-//
-//#define PT_VIRT_PAGE_MASK (((unsigned long long)PT_PAGE_MASK) & PT_VIRT_MASK)
-////#define PT_PHYS_PAGE_MASK (((unsigned long long)PT_PAGE_MASK) & PT_PHYS_MASK)
-//#define PT_PHYS_PAGE_MASK (PT_PHYS_MASK - PT_PAGE_MASK)
 
 // ——————————————————————————— Page bits for flags —————————————————————————— //
 
