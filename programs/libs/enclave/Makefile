@@ -1,4 +1,4 @@
-all: encl_loader.so encl.so
+all: encl_loader.so encl.so test-enclave test
 
 # The folders we depend on.
 ELF_LIB=../elf64
@@ -12,10 +12,16 @@ INCLUDES=-I$(ELF_LIB)/include -I$(ENCL_DRIVER)/include -I$(CAPA_LIB)/include
 ELF_CONFIG= -Wl,-R $(ELF_LIB) -L$(ELF_LIB)
 
 encl_loader.so: loader/lib.c
-	gcc $(INCLUDES) -Iinclude/ $(ELF_CONFIG) -shared -o $@ -fPIC $^ -lelf64
+	gcc -g $(INCLUDES) -Iinclude/ $(ELF_CONFIG) -shared -o $@ -fPIC $^ -lelf64
 
 encl.so: runtime/lib.c runtime/entry.S
-	gcc -Iinclude/ -shared -o $@ -fPIC $^
+	gcc -g -Iinclude/ -shared -o $@ -fPIC $^
+
+test-enclave: tests/enclave.c encl_loader.so encl.so
+	gcc -g -nostdlib -fPIC -o $@ $<
+
+test: tests/test.c
+	gcc -g $(INCLUDES) -Iinclude -Wl,-R . -L./  $(ELF_CONFIG) -o $@ $< -lelf64 -l:encl_loader.so 
 
 .PHONY: clean
 

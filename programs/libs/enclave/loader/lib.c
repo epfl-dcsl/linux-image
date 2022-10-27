@@ -12,14 +12,13 @@
 #include "elf64.h"
 // local includes.
 #include "encl_loader.h"
-#include "lib_internal.h"
 
 const char* STACK_SECTION_NAME = ".encl_stack";
 const char* ENCL_DRIVER = "/dev/tyche_enclave"; 
 
 static lib_encl_t* library_plugin = NULL;
 
-static void* mmap_file(const char* file, int* fd)
+void* mmap_file(const char* file, int* fd)
 {
   // First open the file.
   *fd = open(file, O_RDONLY);
@@ -48,7 +47,7 @@ fail:
 }
 
 /// Parses the enclave's ELF.
-static int parse_elf(load_encl_t* encl)
+int parse_enclave(load_encl_t* encl)
 {
   if (encl == NULL || encl->elf_fd < 0) {
     return -1;
@@ -98,25 +97,16 @@ static uint64_t translate_elf_flags(Elf64_Word flags) {
   return result;
 }
 
-static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
+int map_enclave(load_encl_t* enclave)
 {
-  enclave->driver_fd = open(ENCL_DRIVER, O_RDWR);
-  if (enclave->driver_fd < 0) {
+  if (enclave == NULL) {
     goto fail;
   }
 
-  // Create the enclave.
-  struct tyche_encl_create_t create;
-  if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_CREATE, &create) == -1) {
-    goto fail_close;
-  }
-  // Set the handle.
-  enclave->handle = create.handle;
- 
   // Allocate the tracker for each segment mapping.
   enclave->mappings = calloc(sizeof(void*), enclave->header.e_phnum);
   if (enclave->mappings == NULL) {
-    goto fail_close;
+    goto fail;
   }
   enclave->sizes = calloc(sizeof(size_t), enclave->header.e_phnum);
   if (enclave->sizes == NULL) {
@@ -127,35 +117,7 @@ static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* 
     enclave->mappings[i] = NULL;
   }
 
-  // Add the encl.so to the enclave.
-  do {
-    struct tyche_encl_add_region_t region = {
-      .handle = enclave->handle,
-      .start = (uint64_t)library_plugin->plugin,
-      .end = ((uint64_t)(library_plugin->plugin)) + library_plugin->size,
-      .src = (uint64_t)library_plugin->plugin,
-      .flags = TE_READ|TE_EXEC|TE_USER,
-      .tpe = Shared,
-    };
-
-    if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
-      goto fail_free;
-    }
-
-  } while(0);
-  
-  // Add the extras too.
-  do {
-    struct tyche_encl_add_region_t* curr = NULL;
-    for (curr = extras; curr != NULL; curr = (struct tyche_encl_add_region_t*)curr->extra) {
-      if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, curr) !=0) {
-        goto fail_free;
-      }
-    }
-  } while(0);
-  
-
-  // Load each segment.
+  // Map each segment.
   for (int i = 0; i < enclave->header.e_phnum; i++) {
     Elf64_Phdr segment = enclave->segments[i]; 
     uint64_t flags = 0;
@@ -177,7 +139,84 @@ static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* 
     // Copy the content from file  + offset.
     memcpy(enclave->mappings[i],
         enclave->elf_content + segment.p_offset, segment.p_filesz);
-    
+  }
+  return 0;
+
+  // Errors.
+fail_unmap:
+  for (int i = 0; i < enclave->header.e_phnum; i++) {
+    if (enclave->mappings[i] == NULL || enclave->mappings[i] == MAP_FAILED) {
+      continue;
+    }
+    munmap(enclave->mappings[i], enclave->sizes[i]);
+  }
+  free(enclave->sizes);
+fail_free:
+  free(enclave->mappings);
+fail:
+  return -1;
+}
+
+int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
+{
+  enclave->driver_fd = open(ENCL_DRIVER, O_RDWR);
+  if (enclave->driver_fd < 0) {
+    goto fail;
+  }
+
+  // Create the enclave.
+  struct tyche_encl_create_t create;
+  if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_CREATE, &create) == -1) {
+    goto fail_close;
+  }
+  // Set the handle.
+  enclave->handle = create.handle;
+ 
+  if (enclave->mappings == NULL) {
+    goto fail_close;
+  }
+  if (enclave->sizes == NULL) {
+    goto fail_close;
+  }
+
+  // Add the encl.so to the enclave.
+  do {
+    struct tyche_encl_add_region_t region = {
+      .handle = enclave->handle,
+      .start = (uint64_t)library_plugin->plugin,
+      .end = ((uint64_t)(library_plugin->plugin)) + library_plugin->size,
+      .src = (uint64_t)library_plugin->plugin,
+      .flags = TE_READ|TE_EXEC|TE_USER,
+      .tpe = Shared,
+    };
+
+    if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
+      goto fail_free;
+    }
+
+  } while(0);
+
+  // Add the extras too.
+  do {
+    struct tyche_encl_add_region_t* curr = NULL;
+    for (curr = extras; curr != NULL; curr = (struct tyche_encl_add_region_t*)curr->extra) {
+      if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, curr) !=0) {
+        goto fail_free;
+      }
+    }
+  } while(0);
+
+  //TODO do the stack section.
+  
+  // Load each segment.
+  for (int i = 0; i < enclave->header.e_phnum; i++) {
+    Elf64_Phdr segment = enclave->segments[i]; 
+    uint64_t flags = 0;
+
+    // Non-loadable segments are ignored.
+    if (segment.p_type != PT_LOAD) {
+      continue;
+    } 
     // Translate the flags.
     flags = translate_elf_flags(segment.p_flags);
     struct tyche_encl_add_region_t region = {
@@ -195,9 +234,18 @@ static int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* 
   }
 
   // Now commit.
-  if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_COMMIT, enclave->handle) != 0) {
+  struct tyche_encl_commit_t commit = {
+    .handle = enclave->handle,
+    .domain_handle = 0,
+  };
+  if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_COMMIT, &commit) != 0) {
     goto fail_unmap;
-  } 
+  }
+  if (commit.handle != enclave->handle) {
+    goto fail_unmap;
+  }
+  // Setup the domain handle.
+  enclave->domain_handle = commit.domain_handle;
   // Everything went well.
   return 0;
 
@@ -327,6 +375,7 @@ fail:
 
 int load_enclave( const char* file,
                   tyche_encl_handle_t* handle,
+                  domain_id_t* domain_handle,
                   struct tyche_encl_add_region_t* extras)
 {
   // You need to initialize the library_plugin
@@ -341,7 +390,7 @@ int load_enclave( const char* file,
     .segments = NULL,
     .stack_section = NULL,
   };
-  if (handle == NULL) {
+  if (handle == NULL || domain_handle == NULL) {
     goto fail;
   }
   // mmap the file in memory.
@@ -352,9 +401,14 @@ int load_enclave( const char* file,
   }
 
   // Parse the ELF file.
-  if (parse_elf(&enclave) != 0) {
+  if (parse_enclave(&enclave) != 0) {
     fprintf(stderr, "[encl_loader]: unable to parse enclave.\n");
     goto fail_close;
+  }
+
+  if (map_enclave(&enclave) != 0) {
+    fprintf(stderr, "[encl_loader]: unable to map the enclave.\n");
+    goto fail_free;
   }
 
   // Create the enclave.
@@ -363,8 +417,9 @@ int load_enclave( const char* file,
     goto fail_free; 
   }
   
-  // Setup the handle.
+  // Setup the handles.
   *handle = enclave.handle; 
+  *domain_handle = enclave.domain_handle;
   return 0;
 fail_free:
   free(enclave.sections);

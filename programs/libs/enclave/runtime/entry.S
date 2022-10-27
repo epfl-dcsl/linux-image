@@ -60,21 +60,25 @@
 	.endm
 
 /// void domain_gate_vmcall(uint64_t target_domain, void (*function) (void*), void* args); 
-/// First argument is in rdi, second in rsi, third in rdx.
-/// Not sure yet that this is the best transition. Maybe we should have a default
-/// dispatcher. I don't know. This will do as a first attempt.
+/// Argument order: rdi, rsi, rdx, rcx, r8, r9.
+/// The API for tyche is rcx, rdx, rsi.
 /// Vmfunc should be very similar (replace the vmcall with vmfunc)
 .globl domain_gate_vmcall
 domain_gate_vmcall:
   // vmcall expects rdi to be the target domain.
   // It replaces it with the caller when we are the target.
+  movq %rdi, %rcx  
   movq TRANSITION, %rax
+  vmcall
+
+  movq $0x500, %rax
+  movq $0xbadbabe, %rcx
   vmcall
 
   // We are in the callee.
   // rdi should now contain where we should return.
-  subq REG_END, %rsp
-  SAVE_REGS
+  #subq REG_END, %rsp
+  #SAVE_REGS
 
   // Move the args.
   movq  %rdx, %rdi
