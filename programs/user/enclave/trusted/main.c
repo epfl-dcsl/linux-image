@@ -17,5 +17,9 @@ void trusted_entry(void* dest)
 
 // Just to look good.
 int _start() {
-  return 0;
+    /* exit system call */
+    asm("movl $1,%eax;"
+        "xorl %ebx,%ebx;"
+        "int  $0x80"
+    );
 }
