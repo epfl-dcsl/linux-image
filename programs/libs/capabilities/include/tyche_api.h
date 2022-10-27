@@ -42,5 +42,6 @@ int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_typ
 int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle);
 int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
 int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
+int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t stack);
 
 #endif

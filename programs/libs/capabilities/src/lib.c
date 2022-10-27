@@ -201,3 +201,9 @@ int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t 
 failure:
   return -1;
 }
+
+int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t stack)
+{
+  local_domain.print("About to seal a domain.\n");
+  return tyche_domain_seal(handle, cr3, stack);
+}

@@ -68,4 +68,7 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
 /// Merges the referenced capability defined by start/end into the local domain.
 int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t tpe);
 
+/// Seal the domain.
+int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t stack);
+
 #endif

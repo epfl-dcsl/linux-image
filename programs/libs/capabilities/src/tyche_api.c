@@ -119,3 +119,16 @@ int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
   *new_handle = frame.ret_1;
   return 0;
 }
+
+int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t stack)
+{
+  vmcall_frame_t frame;
+  frame.id = TYCHE_DOMAIN_SEAL;
+  frame.value_1 = handle;
+  frame.value_2 = cr3;
+  frame.value_3 = stack;
+  if (tyche_call(&frame) != 0) {
+    return -1;
+  }
+  return 0;
+}
