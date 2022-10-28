@@ -200,6 +200,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
   do {
     struct tyche_encl_add_region_t* curr = NULL;
     for (curr = extras; curr != NULL; curr = (struct tyche_encl_add_region_t*)curr->extra) {
+      curr->handle = enclave->handle;
       if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, curr) !=0) {
         goto fail_free;
       }

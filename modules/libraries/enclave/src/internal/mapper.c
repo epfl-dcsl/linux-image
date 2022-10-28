@@ -28,7 +28,7 @@ static entry_t* allocate(void* ptr)
   }
   
   allocation = alloc_pages_exact(PT_PAGE_SIZE, GFP_KERNEL);
-  if (allocation == NULL) {
+  if (allocation == NULL || ((uint64_t)allocation) % PT_PAGE_SIZE != 0) {
     return NULL;
   }
   memset(allocation, 0, PT_PAGE_SIZE);

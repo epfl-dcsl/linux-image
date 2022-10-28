@@ -7,6 +7,7 @@
 #include "mapper.h"
 #include "process.h"
 #include "tyche_vmcall.h"
+#include "../dbg/dbg.h"
 
 #define PAGE 0x1000
 // ——————————————————————— Globals to track enclaves ———————————————————————— //
@@ -87,7 +88,8 @@ static struct enclave_t* find_enclave(tyche_encl_handle_t handle)
   }
   // Check that the task calling is the one that created the enclave.
   if (encl->pid != current->pid) {
-    pr_err("[TE]: Attempt to add a page to an enclave from a different task!\n");
+    printk(KERN_NOTICE "[TE]: Attempt to add a page to enclave [%lx] from a different task!\n", handle);
+    printk(KERN_NOTICE " Expected: %d; got %d\n", encl->pid, current->pid);
     return NULL;
   }
   return encl;
@@ -134,7 +136,7 @@ int add_enclave(tyche_encl_handle_t handle)
     dll_remove((&enclaves), encl, list);
     return -1;
   }
-  pr_info("[TE]: A new enclave was created.\n"); 
+  printk(KERN_NOTICE "[TE]: A new enclave[%lx] was created by %d.\n", handle, current->pid); 
   return 0;
 }
 
@@ -339,17 +341,20 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
   dll_foreach(&(encl->all_pages), pa_region, globals) {
     // The call will set the handle in the pa_region.
     if (tyche_split_grant(encl, pa_region) != 0) {
+      pr_err("[TE]: tyche_split grant failed.\n");
       goto failure;
     }
   }
 
   // Now seal the enclave. 
   if (tyche_seal_enclave(encl) != 0) {
+    pr_err("[TE]: tyche_seal_enclave failed.\n");
     goto failure;
   }
 
   // Give back the handle for the domain.
   commit->domain_handle = encl->tyche_handle;
+  register_cr3(encl->cr3);
   return 0;
 
 failure:
@@ -363,7 +368,7 @@ failure:
     struct pa_region_t* tmp = pa_region;
     pa_region = pa_region->list.next;
     dll_remove(&(encl->pts), tmp, list);
-    ptr = phys_to_virt((phys_addr_t)(pa_region->start)); 
+    ptr = phys_to_virt((phys_addr_t)(tmp->start)); 
     free_pages_exact(ptr, 0x1000);
     kfree(tmp);
   }
