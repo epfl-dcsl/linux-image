@@ -14,6 +14,8 @@
 #include "encl_loader.h"
 
 const char* STACK_SECTION_NAME = ".encl_stack";
+char* ENCLAVE_START = "encl_start";
+const uint64_t stack_headroom = 4;
 const char* ENCL_DRIVER = "/dev/tyche_enclave"; 
 
 static lib_encl_t* library_plugin = NULL;
@@ -75,6 +77,10 @@ int parse_enclave(load_encl_t* encl)
     fprintf(stderr, "[encl_loader]: no stack section.\n");
     goto fail;
   }
+  
+  // Find the entry point.
+  encl->entry_point = find_symbol(encl->elf_fd, ENCLAVE_START, encl->header, encl->sections);
+
   // All went well
   return 0;
 fail:
@@ -84,7 +90,8 @@ fail:
 }
 
 static uint64_t translate_elf_flags(Elf64_Word flags) {
-  uint64_t result = TE_USER;
+  //TODO reenable once we have a kernel.
+  uint64_t result = 0;//TE_USER;
   if (flags & PF_X) {
     result |= TE_EXEC; 
   }
@@ -207,8 +214,6 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
     }
   } while(0);
 
-  //TODO do the stack section.
-  
   // Load each segment.
   for (int i = 0; i < enclave->header.e_phnum; i++) {
     Elf64_Phdr segment = enclave->segments[i]; 
@@ -239,6 +244,13 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
     .handle = enclave->handle,
     .domain_handle = 0,
   };
+  if (enclave->stack_section != NULL) {
+    Elf64_Shdr* stack = enclave->stack_section;
+    commit.stack = (uint64_t)(stack->sh_addr + stack->sh_size - stack_headroom); 
+  }
+  if (enclave->entry_point != NULL) {
+    commit.entry = enclave->entry_point->st_value;
+  }
   if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_COMMIT, &commit) != 0) {
     goto fail_unmap;
   }

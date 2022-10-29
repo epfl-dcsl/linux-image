@@ -346,6 +346,10 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
     }
   }
 
+  // Set the stack and entry.
+  encl->stack = commit->stack;
+  encl->entry = commit->entry;
+
   // Now seal the enclave. 
   if (tyche_seal_enclave(encl) != 0) {
     pr_err("[TE]: tyche_seal_enclave failed.\n");

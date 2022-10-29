@@ -52,6 +52,9 @@ typedef struct load_encl_t {
   /// The stack segment.
   Elf64_Shdr* stack_section;
 
+  /// The enclave entry point.
+  Elf64_Sym* entry_point;
+
   /// Enclave handle.
   tyche_encl_handle_t handle;
 

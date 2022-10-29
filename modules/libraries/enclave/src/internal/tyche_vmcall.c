@@ -4,7 +4,7 @@
 
 extern int tc_create_domain(domain_id_t* handle);
 extern int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe, paddr_t* new_handle);
-extern int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t stack);
+extern int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t entry, paddr_t stack);
 
 int tyche_domain_create(struct enclave_t* encl)
 {
@@ -30,5 +30,5 @@ int tyche_seal_enclave(struct enclave_t* enclave)
     pr_err("[TE]: Error enclave is null in tyche_seal_enclave.\n");
     return -1;
   } 
-  return tc_seal_domain(enclave->tyche_handle, enclave->cr3, enclave->stack);
+  return tc_seal_domain(enclave->tyche_handle, enclave->cr3, enclave->entry, enclave->stack);
 }

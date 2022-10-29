@@ -27,6 +27,7 @@ typedef struct vmcall_frame_t {
   unsigned long value_1;
   unsigned long value_2;
   unsigned long value_3;
+  unsigned long value_4;
 
   // Results.
   unsigned long ret_1;
@@ -42,6 +43,6 @@ int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_typ
 int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle);
 int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
 int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
-int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t stack);
+int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack);
 
 #endif

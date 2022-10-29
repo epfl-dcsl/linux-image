@@ -67,6 +67,9 @@ struct enclave_t {
   /// The enclave's physical value of cr3.
   uint64_t cr3;
 
+  /// Default entry point for the enclave.
+  uint64_t entry;
+
   /// The enclave's stack.
   uint64_t stack;
 

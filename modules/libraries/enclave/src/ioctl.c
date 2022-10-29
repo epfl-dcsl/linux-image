@@ -108,16 +108,17 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
   struct tyche_encl_create_t handle;
   struct tyche_encl_add_region_t region;
   struct tyche_encl_commit_t commit;
-  uint64_t dest = 0;
+  //uint64_t dest = 0;
   switch(cmd)
   {
     case TYCHE_ENCLAVE_DBG:
       pr_info("[TE]: Invoked TYCHE_ENCLAVE_DBG.\n");
-      dest = (uint64_t) debugging_cr3();
+      /*dest = (uint64_t) debugging_cr3();
       if (copy_to_user((uint64_t*)arg, &dest, sizeof(uint64_t))) {
         pr_err("[TE]: Debugging error.\n");
         return -1;
-      }
+      }*/
+      debugging_transition(arg);
       break;
     case TYCHE_ENCLAVE_CREATE:
       // TODO replace this with a tyche vmcall that yields an address

@@ -24,8 +24,8 @@ a.out: src/main.c enclave
 	cp $(LOADER)/encl.so libs/
 	gcc -g $(INCLUDES) -Wl,-R ./libs/ -L./libs/ -o $@ $< $(DYN_LIBS)
 
-enclave: trusted/main.c
-	gcc -g -nostdlib -static -o $@ $<
+enclave: trusted/main.c trusted/asm.S
+	gcc -g -nostdlib -static -o $@ $^
 
 install: a.out enclave
 	mkdir -p $(BUSYBOX)

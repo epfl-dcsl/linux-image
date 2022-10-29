@@ -11,14 +11,15 @@ int tyche_call(vmcall_frame_t* frame)
     "movq %5, %%rcx\n\t"
     "movq %6, %%rdx\n\n"
     "movq %7, %%rsi\n\t"
+    "movq %8, %%r9\n\t"
     "vmcall\n\t"
     "movq %%rax, %0\n\t"
     "movq %%rcx, %1\n\t"
     "movq %%rdx, %2\n\t"
     "movq %%rsi, %3\n\t"
     : "=rm" (result), "=rm" (frame->ret_1), "=rm" (frame->ret_2), "=rm" (frame->ret_3)
-    : "rm" (frame->id), "rm" (frame->value_1), "rm" (frame->value_2), "rm" (frame->value_3)
-    : "rax", "rcx", "rdx", "rsi", "memory");
+    : "rm" (frame->id), "rm" (frame->value_1), "rm" (frame->value_2), "rm" (frame->value_3), "rm" (frame->value_4) 
+    : "rax", "rcx", "rdx", "rsi", "r9", "memory");
 
   return (int)result;
 } 
@@ -120,13 +121,14 @@ int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
   return 0;
 }
 
-int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t stack)
+int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack)
 {
   vmcall_frame_t frame;
   frame.id = TYCHE_DOMAIN_SEAL;
   frame.value_1 = handle;
   frame.value_2 = cr3;
-  frame.value_3 = stack;
+  frame.value_3 = entry;
+  frame.value_4 = stack;
   if (tyche_call(&frame) != 0) {
     return -1;
   }

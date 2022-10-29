@@ -64,6 +64,12 @@ struct tyche_encl_commit_t {
 
   /// The handle to reference the domain.
   domain_id_t domain_handle;
+
+  /// The pointer to the stack.
+  uint64_t stack;
+
+  /// The entry point.
+  uint64_t entry;
 };
 
 // ——————————————————————————— Tyche Enclave IOCTL API —————————————————————— //

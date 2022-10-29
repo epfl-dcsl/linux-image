@@ -14,19 +14,19 @@
 const char* encl_so = "libs/encl.so";
 const char* trusted = "enclave";
 
-void test_debugging(void)
+void test_debugging(domain_id_t handle)
 {
-  uint64_t new_cr3 = 0;
+  //uint64_t new_cr3 = 0;
   int fd = open("/dev/tyche_enclave", O_RDWR);
   if(fd < 0) {
     fprintf(stderr, "Cannot open device driver.\n");
     exit(1);
   }
-  if(ioctl(fd, TYCHE_ENCLAVE_DBG, &new_cr3) != 0) {
+  if(ioctl(fd, TYCHE_ENCLAVE_DBG, handle) != 0) {
     fprintf(stderr, "DBG ioctl does not work\n");
     exit(1);
   }
-  printf("\n\n New cr3 %llx\n\n", new_cr3);
+  /*printf("\n\n New cr3 %llx\n\n", new_cr3);
   asm volatile (
     "movq $0xdeadbeef, %%rax\n\t"
     "movq %0, %%rcx\n\t"
@@ -36,7 +36,7 @@ void test_debugging(void)
     "vmcall"
     :
     : "rm" (new_cr3)
-    : "rax", "rcx");
+    : "rax", "rcx");*/
   close(fd);
 }
 
@@ -75,7 +75,7 @@ int main(void) {
   printf("Rdx should be: %llx\n", 0x401000);
   printf("Rsi should be: %llx\n", shared);
   printf("The vmcall_gate is at %llx.\n", library->vmcall_gate);
-  //test_debugging();
-  library->vmcall_gate(domain_handle, (target_func_t)0x401000, shared);
+  test_debugging(domain_handle);
+  //library->vmcall_gate(domain_handle, (target_func_t)0x401000, shared);
   return 0;
 }

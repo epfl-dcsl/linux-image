@@ -50,9 +50,9 @@ int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capabili
   return transfer_capa(dom, start, end, tpe, new_handle);
 }
 
-int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t stack)
+int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t entry, paddr_t stack)
 {
-  return seal_domain(dom, cr3, stack);
+  return seal_domain(dom, cr3, entry, stack);
 }
 // ————————————————————————— Module's Registration —————————————————————————— //
 
