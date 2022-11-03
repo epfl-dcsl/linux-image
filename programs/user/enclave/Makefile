@@ -14,6 +14,7 @@ DYN_LIBS= -l:encl_loader.so -lelf64
 
 # Destination for installation.
 BUSYBOX=../../../builds/initramfs/x86-busybox/home/tyche/enclaves
+DISK_PATH = /tmp/mount/tyche/
 
 a.out: src/main.c enclave 
 	mkdir -p libs
@@ -31,6 +32,11 @@ install: a.out enclave
 	mkdir -p $(BUSYBOX)
 	cp -r libs $(BUSYBOX) 
 	cp -t $(BUSYBOX) $^
+
+install_disk: a.out enclave
+	mkdir -p $(DISK_PATH)/enclaves
+	cp -r libs $(DISK_PATH)/enclaves
+	cp -t $(DISK_PATH)/enclaves $^
 
 
 .PHONY: clean

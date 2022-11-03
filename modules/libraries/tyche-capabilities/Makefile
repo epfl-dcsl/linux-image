@@ -26,6 +26,7 @@ PWD:=$(shell pwd)
 ## —————————————————————— Where to install the module ——————————————————————— ##
 
 INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/tyche-capabilities
+DISK_PATH ?= /tmp/mount/tyche/
 
 all:
 	KBUILD_MODPOST_WARN=1 $(MAKE) -C $(BUILDSYSTEM_DIR) M=$(PWD) modules
@@ -37,6 +38,11 @@ install: all
 	cp $(TARGET_MODULE).ko $(INSTALL_PATH)
 	cp $(TARGET_MODULE).sh $(INSTALL_PATH)
 	cp $(TARGET_MODULE).mod $(INSTALL_PATH)
+
+install_disk: all
+	cp $(TARGET_MODULE).ko $(DISK_PATH)
+	cp $(TARGET_MODULE).sh $(DISK_PATH)
+	cp $(TARGET_MODULE).mod $(DISK_PATH)
 
 clean:
 	$(MAKE) -C $(BUILDSYSTEM_DIR) M=$(PWD) clean

@@ -20,3 +20,16 @@ run-linux-embedded: linux-embedded
 		-accel kvm,kernel-irqchip=split \
 		-m 6G \
 		-s
+
+ubuntu_mount:
+	sudo ./scripts/mount_ubuntu.sh mount ../ubuntu.qcow2 /tmp/mount
+
+ubuntu_umount:
+	sudo ./scripts/mount_ubuntu.sh umount ../ubuntu.qcow2 /tmp/mount
+
+# Make sure you mount the disk first
+refresh_disk:
+	make -B -C modules/libraries/enclave install_disk
+	make -B -C modules/libraries/tyche-capabilities install_disk
+	make -B -C programs/user/enclave install_disk
+	make linux-embedded
