@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 // elf64 library includes.
 #include "elf64.h"
@@ -168,21 +169,25 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
 {
   enclave->driver_fd = open(ENCL_DRIVER, O_RDWR);
   if (enclave->driver_fd < 0) {
+    fprintf(stderr, "[encl_loader] create_enclave fd invalid %d\n", errno);
     goto fail;
   }
 
   // Create the enclave.
   struct tyche_encl_create_t create;
   if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_CREATE, &create) == -1) {
+    fprintf(stderr, "[encl_loader]: ioctl call failed.\n");
     goto fail_close;
   }
   // Set the handle.
   enclave->handle = create.handle;
  
   if (enclave->mappings == NULL) {
+    fprintf(stderr, "[encl_loader] create_enclave mappings is null.\n");
     goto fail_close;
   }
   if (enclave->sizes == NULL) {
+    fprintf(stderr, "[encl_loader] create_enclave sizes is null.\n");
     goto fail_close;
   }
 
@@ -198,6 +203,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
     };
 
     if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
+      fprintf(stderr, "[encl_loader] create_enclave unable to add encl.so region.\n");
       goto fail_free;
     }
 
@@ -209,6 +215,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
     for (curr = extras; curr != NULL; curr = (struct tyche_encl_add_region_t*)curr->extra) {
       curr->handle = enclave->handle;
       if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, curr) !=0) {
+        fprintf(stderr, "[encl_loader] create_enclave failed to add extras.\n");
         goto fail_free;
       }
     }
@@ -235,6 +242,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
     };
     // Call the driver with segment.p_vaddr, p_vaddr + pmemsz, p_flags
     if(ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
+      fprintf(stderr, "[encl_loader] create_enclave failed to add region.\n");
       goto fail_unmap;
     }
   }
@@ -252,9 +260,11 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
     commit.entry = enclave->entry_point->st_value;
   }
   if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_COMMIT, &commit) != 0) {
+    fprintf(stderr, "[encl_loader] create_enclave failed to commit.\n");
     goto fail_unmap;
   }
   if (commit.handle != enclave->handle) {
+    fprintf(stderr, "[encl_loader] create_enclave commit handle is not enclave handle\n");
     goto fail_unmap;
   }
   // Setup the domain handle.

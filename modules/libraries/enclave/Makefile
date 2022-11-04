@@ -19,7 +19,7 @@ PWD:=$(shell pwd)
 
 ## —————————————————————— Where to install the module ——————————————————————— ##
 INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/tyche-enclave
-DISK_PATH ?= /tmp/mount/tyche/
+DISK_PATH ?= /tmp/mount/tyche/tyche-enclave
 
 all : 
 # run kernel build system to make module
@@ -39,6 +39,8 @@ install_disk: all
 	cp $(TARGET_MODULE).ko $(DISK_PATH)
 	cp $(TARGET_MODULE).sh $(DISK_PATH)
 	cp $(TARGET_MODULE).mod $(DISK_PATH)
+	cp Module.symvers $(DISK_PATH)
+	cp modules.order $(DISK_PATH)
 
 
 clean:

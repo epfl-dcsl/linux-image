@@ -28,24 +28,25 @@ error() {
     exec /bin/sh
 }
 
-error_part5() {
-  echo "Failed to mount on sdb2, try sdb5"
-  mknod /dev/sdb5 b 8 21
-  mount /dev/sdb5 /newroot || error
-  exec switch_root /newroot /sbin/init || error
+error_part3() {
+  echo "Failed to mount on sdb2, try sdb3"
+  umount /newroot
+  mknod /dev/sdb3 b 8 19
+  mount /dev/sdb3 /newroot || error
 }
-
-# Install disk
-# We have a disk B with 2 partitions for now
+##
+### Install disk
+### We have a disk B with 2 partitions for now
 mknod /dev/sdb  b 8 16
 mknod /dev/sdb1 b 8 17
 mknod /dev/sdb2 b 8 18
-#
-## Create new root
+###
+#### Create new root
 mkdir /newroot
-mount /dev/sdb2 /newroot || error_part5
-#
-## Switch root
+mount /dev/sdb2 /newroot || error_part3
+ls /newroot/sbin || error_part3
+###
+#### Switch root
 exec switch_root /newroot /sbin/init || error
 
 exec /bin/sh
