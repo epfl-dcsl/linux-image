@@ -452,3 +452,22 @@ fail_close:
 fail:
   return -1;
 }
+
+int enclave_driver_transition(domain_id_t handle, void* args)
+{
+  int driver_fd = open(ENCL_DRIVER, O_RDWR);
+  if (driver_fd < 0) {
+    fprintf(stderr, "[encl_loader] create_enclave fd invalid %d\n", errno);
+    return -1;
+  }
+  struct tyche_encl_transition_t transition = {
+    .handle = handle,
+    .args = args,
+  };
+  if (ioctl(driver_fd, TYCHE_TRANSITION, &transition) != 0) {
+    fprintf(stderr, "[encl_loader] driver refused transition\n");
+    return -1;
+  }
+  close(driver_fd);
+  return 0;
+}

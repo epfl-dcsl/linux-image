@@ -51,14 +51,13 @@ int main(void) {
     fprintf(stderr, "Error mapping shared memory region.\n");
     exit(1);
   }
-
   printf("The shared region is %llx\n", shared);
 
   struct tyche_encl_add_region_t extra = {
     .start = (uint64_t) shared,
     .end = ((uint64_t)shared)+0x1000,
     .src = (uint64_t) shared,
-    .flags = TE_READ|TE_USER|TE_WRITE,
+    .flags = TE_READ|TE_WRITE,
     .tpe = Shared,
     .extra = NULL,
   };
@@ -75,7 +74,8 @@ int main(void) {
   printf("Rdx should be: %llx\n", 0x401000);
   printf("Rsi should be: %llx\n", shared);
   printf("The vmcall_gate is at %llx.\n", library->vmcall_gate);
-  test_debugging(domain_handle);
+  enclave_driver_transition(domain_handle, shared);
+  //test_debugging(domain_handle);
   //library->vmcall_gate(domain_handle, (target_func_t)0x401000, shared);
   return 0;
 }

@@ -108,6 +108,7 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
   struct tyche_encl_create_t handle;
   struct tyche_encl_add_region_t region;
   struct tyche_encl_commit_t commit;
+  struct tyche_encl_transition_t transition;
   //uint64_t dest = 0;
   switch(cmd)
   {
@@ -119,6 +120,17 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         return -1;
       }*/
       debugging_transition(arg);
+      break;
+    case TYCHE_TRANSITION:
+      if (copy_from_user(&transition, (struct tyche_encl_transition_t*)arg,
+            sizeof(struct tyche_encl_transition_t))) {
+        pr_err("[TE]: unable to copy transition argument.\n");
+        return -1;
+      }
+      if(enclave_transition(&transition) != 0) {
+        pr_err("[TE]: error enclave_transition.\n");
+        return -1;
+      }
       break;
     case TYCHE_ENCLAVE_CREATE:
       // TODO replace this with a tyche vmcall that yields an address

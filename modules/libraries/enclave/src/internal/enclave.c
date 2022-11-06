@@ -419,6 +419,25 @@ int delete_enclave(tyche_encl_handle_t handle)
   return 0;
 }
 
+int enclave_transition(struct tyche_encl_transition_t* transition)
+{
+  if (transition == NULL) {
+    return -1;
+  }
+ 
+  asm (
+      "cli\n\t"
+      "movq $0x999, %%rax\n\t"
+      "movq %0, %%rcx\n\t"
+      "movq %1, %%rdx\n\t"
+      "vmcall"
+      :
+      : "rm" (transition->handle), "rm" (transition->args)
+      : "rax", "rcx", "rdx", "memory"
+      );
+  return 0;
+}
+
 // —————————————————————————————— Internal API —————————————————————————————— //
 int add_merge_global(struct enclave_t* enclave, struct pa_region_t* region)
 {

@@ -82,4 +82,5 @@ void* mmap_file(const char* file, int* fd);
 int parse_enclave(load_encl_t* enclave);
 int map_enclave(load_encl_t* enclave);
 int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras);
+int enclave_driver_transition(domain_id_t handle, void* args);
 #endif

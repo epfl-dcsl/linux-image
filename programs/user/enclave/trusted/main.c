@@ -1,5 +1,4 @@
-const char* message = "Hello world!\n\0";
-
+const char* message = "Hello World!\n\t";
 
 char encl_stack[0x4000] __attribute__((section(".encl_stack")));
 
@@ -10,9 +9,23 @@ void trusted_entry(void* dest)
   // Handmade memcpy.
   char* ptr = (char*) dest;
   for (int i = 0; i < 14; i++) {
-    ptr = ptr + i;
-    *ptr = message[i];
+    ptr[i] = message[i];
   } 
+}
+
+int fibonnacci(int n)
+{
+  if (n <= 0) {
+    return 0;
+  } else if (n == 1) {
+    return 1;
+  }
+  return (fibonnacci(n-1) + fibonnacci(n-2));
+}
+
+void fibonnacci_out()
+{
+  fibonnacci(10);
 }
 
 // Just to look good.
