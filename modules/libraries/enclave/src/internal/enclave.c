@@ -410,12 +410,47 @@ int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region) {
 
 int delete_enclave(tyche_encl_handle_t handle)
 {
-  //TODO
-  //1. Collect all the handles and re-merge.
-  //2. delete all the pas in all_pages.
-  //3. delete all the pas in regions and all the regions.
-  //4. remove the enclave from the list.
-  //5 delete the enclave.
+  struct enclave_t* encl = NULL; 
+  struct pa_region_t* pa_reg = NULL;
+  struct region_t* reg = NULL;
+  // Find the enclave.
+  encl = find_enclave(handle);
+  if (encl == NULL) {
+    pr_err("[TE] delete_enclave unable to find enclave.\n");
+    return -1;
+  }
+  // Collect all the handles and re-merge.
+  dll_foreach(&(encl->all_pages), pa_reg, globals) {
+    //TODO clean up and merge.
+  }
+
+  // Delete all the pas in all_pages.
+  while(!dll_is_empty(&(encl->all_pages))) {
+    struct pa_region_t* head = encl->all_pages.head;
+    dll_remove(&(encl->all_pages), head, globals);
+    kfree(head);
+  }
+  // Delete all the pas in regions.
+  dll_foreach(&(encl->regions), reg, list) {
+    while(!dll_is_empty(&(reg->pas))) {
+      struct pa_region_t* head = reg->pas.head;
+      dll_remove(&(reg->pas), head, list);
+      kfree(head);
+    }
+  }
+  // Delete all the regions.
+  while(!dll_is_empty(&(encl->regions))) {
+    struct region_t* head = encl->regions.head;
+    dll_remove(&(encl->regions), head, list);
+    kfree(head);
+  }
+
+  // Remove the enclave from the list.
+  dll_remove(&(enclaves), encl, list);
+
+  // Delete the enclave.
+  //TODO call tyche to delete the domain.
+  kfree(encl);
   return 0;
 }
 
