@@ -132,6 +132,12 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         return -1;
       }
       break;
+    case TYCHE_ENCLAVE_DELETE:
+      if (delete_enclave((tyche_encl_handle_t) arg) != 0) {
+        pr_err("[TE]: delete_enclave failed!\n");
+        return -1;
+      }
+      break;
     case TYCHE_ENCLAVE_CREATE:
       // TODO replace this with a tyche vmcall that yields an address
       // to a page that's map exclusively to the vm and then return an index.

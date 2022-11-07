@@ -10,9 +10,7 @@ const char* trusted = "test-enclave";
 
 static int no_module_loader(load_encl_t* enclave)
 {
-
-
-  enclave->elf_content = mmap_file(trusted, &(enclave->elf_fd)); 
+  enclave->elf_content = mmap_file(trusted, &(enclave->elf_fd), &(enclave->elf_size)); 
   if (enclave->elf_content == NULL || enclave->elf_fd == -1) {
     fprintf(stderr, "[encl_loader]: mmap of enclave failed.\n");
     goto fail; 

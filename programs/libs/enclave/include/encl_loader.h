@@ -41,6 +41,9 @@ typedef struct load_encl_t {
   /// The file that was mmap-ed.
   void* elf_content;
 
+  /// The elf content size.
+  size_t elf_size;
+
   Elf64_Ehdr header;
 
   /// The ELF sections.
@@ -73,14 +76,21 @@ typedef struct load_encl_t {
 const lib_encl_t* init_enclave_loader(const char* libencl);
 
 /// Load the enclave defined by the file path, add the extras regions to it,
-/// store the resulting handle in the pprovided pointer.
-int load_enclave(const char* file, tyche_encl_handle_t* handle,
-    domain_id_t* domain_handle, struct tyche_encl_add_region_t* extras);
+/// store the resulting enclave definition in the provided enclave pointer.
+int load_enclave(const char* file, load_encl_t* enclave,
+    struct tyche_encl_add_region_t* extras);
 
+/// Delete an enclave.
+/// We reclaim the resources allocated to the enclave and delete the loader and
+/// the driver datastructures.
+int delete_enclave(load_encl_t* encl);
+
+/// An implementation of the transition that goes through the kernel driver.
+/// This allows to disable interrupts before transitioning.
+int enclave_driver_transition(domain_id_t handle, void* args);
 // ————————————————————————————— Debugging API —————————————————————————————— //
-void* mmap_file(const char* file, int* fd);
+void* mmap_file(const char* file, int* fd, size_t* size);
 int parse_enclave(load_encl_t* enclave);
 int map_enclave(load_encl_t* enclave);
 int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras);
-int enclave_driver_transition(domain_id_t handle, void* args);
 #endif

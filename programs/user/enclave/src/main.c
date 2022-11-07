@@ -14,33 +14,6 @@
 const char* encl_so = "libs/encl.so";
 const char* trusted = "enclave";
 
-void test_debugging(domain_id_t handle)
-{
-  //uint64_t new_cr3 = 0;
-  int fd = open("/dev/tyche_enclave", O_RDWR);
-  if(fd < 0) {
-    fprintf(stderr, "Cannot open device driver.\n");
-    exit(1);
-  }
-  if(ioctl(fd, TYCHE_ENCLAVE_DBG, handle) != 0) {
-    fprintf(stderr, "DBG ioctl does not work\n");
-    exit(1);
-  }
-  /*printf("\n\n New cr3 %llx\n\n", new_cr3);
-  asm volatile (
-    "movq $0xdeadbeef, %%rax\n\t"
-    "movq %0, %%rcx\n\t"
-    "vmcall\n\t"
-    "movq $0xdeadbabe, %%rcx\n\t"
-    "movq $0x500, %%rax\n\t"
-    "vmcall"
-    :
-    : "rm" (new_cr3)
-    : "rax", "rcx");*/
-  close(fd);
-}
-
-
 int main(void) {
   printf("Let's create an enclave!\n");
   const lib_encl_t* library = init_enclave_loader(encl_so);
@@ -61,21 +34,11 @@ int main(void) {
     .tpe = Shared,
     .extra = NULL,
   };
-
-  tyche_encl_handle_t handle;
-  domain_id_t domain_handle;
-  if (load_enclave(trusted, &handle, &domain_handle, &extra) != 0) {
+  load_encl_t enclave;
+  if (load_enclave(trusted, &enclave, &extra) != 0) {
     fprintf(stderr, "Unable to load the enclave.\n");
     exit(1);
   } 
-  printf("We have a handle! %llx\n", handle);
-  // TODO get it from the enclave loader.
-  printf("Rcx should be: %llx\n", handle);
-  printf("Rdx should be: %llx\n", 0x401000);
-  printf("Rsi should be: %llx\n", shared);
-  printf("The vmcall_gate is at %llx.\n", library->vmcall_gate);
-  enclave_driver_transition(domain_handle, shared);
-  //test_debugging(domain_handle);
-  //library->vmcall_gate(domain_handle, (target_func_t)0x401000, shared);
+  enclave_driver_transition(enclave.domain_handle, shared);
   return 0;
 }
