@@ -2,6 +2,8 @@
 
 .globl encl_start
 encl_start:
+  movq %rcx, %rdi
+  movq %rdx, %rsi
   callq trusted_entry
   callq fibonnacci_out 
   movq $0x500, %rax

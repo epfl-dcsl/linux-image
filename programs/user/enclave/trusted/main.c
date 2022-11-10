@@ -3,14 +3,26 @@ const char* message = "Hello World!\n\t";
 char encl_stack[0x4000] __attribute__((section(".encl_stack")));
 
 
-// Puts hello world inside the shared dest buffer.
-void trusted_entry(void* dest)
+void print_message(void* dest)
 {
   // Handmade memcpy.
   char* ptr = (char*) dest;
   for (int i = 0; i < 14; i++) {
     ptr[i] = message[i];
   } 
+}
+
+// Puts hello world inside the shared dest buffer.
+void trusted_entry(unsigned long ret_handle, void* args)
+{
+  if (args == 0) {
+    asm(
+      "movq $0x500, %rax\n\t"
+      "movq $0xbadb1, %rcx\n\t"
+      "vmcall"
+        );
+  }
+  print_message(args);
 }
 
 int fibonnacci(int n)
