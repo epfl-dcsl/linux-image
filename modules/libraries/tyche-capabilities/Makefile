@@ -25,7 +25,7 @@ PWD:=$(shell pwd)
 
 ## —————————————————————— Where to install the module ——————————————————————— ##
 
-INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/tyche-capabilities
+INSTALL_PATH ?= /tyche/tyche-capabilities
 DISK_PATH ?= /tmp/mount/tyche/tyche-capabilities
 
 all:

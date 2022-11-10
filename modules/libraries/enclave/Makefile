@@ -18,7 +18,7 @@ PWD:=$(shell pwd)
 
 
 ## —————————————————————— Where to install the module ——————————————————————— ##
-INSTALL_PATH ?= ../../../builds/initramfs/x86-busybox/home/tyche/drivers/tyche-enclave
+INSTALL_PATH ?= /tyche/tyche-enclave
 DISK_PATH ?= /tmp/mount/tyche/tyche-enclave
 
 all : 

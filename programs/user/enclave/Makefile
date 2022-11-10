@@ -17,8 +17,8 @@ CAPA_LIB=$(CAPA)/libcapabilities.a
 DYN_LIBS= -l:encl_loader.so -lelf64
 
 # Destination for installation.
-BUSYBOX=../../../builds/initramfs/x86-busybox/home/tyche/enclaves
 DISK_PATH = /tmp/mount/tyche/
+INSTALL_PATH = /tyche
 
 a.out: src/main.c enclave 
 	mkdir -p libs
@@ -33,9 +33,9 @@ enclave: trusted/main.c trusted/asm.S $(CAPA_LIB)
 	gcc -g $(INCLUDES) -nostdlib -static -o $@ $^
 
 install: a.out enclave
-	mkdir -p $(BUSYBOX)
-	cp -r libs $(BUSYBOX) 
-	cp -t $(BUSYBOX) $^
+	mkdir -p $(INSTALL_PATH)/enclaves
+	cp -r libs $(INSTALL_PATH)/enclaves
+	cp -t $(INSTALL_PATH)/enclaves $^
 
 install_disk: a.out enclave
 	mkdir -p $(DISK_PATH)/enclaves

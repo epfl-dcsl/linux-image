@@ -29,8 +29,21 @@ ubuntu_umount:
 
 # Make sure you mount the disk first
 refresh_disk:
+	sudo chown --recursive $(shell whoami) /tmp/mount/tyche
 	make -B -C modules/libraries/enclave install_disk
 	make -B -C modules/libraries/tyche-capabilities install_disk
 	make -B -C programs/user/enclave install_disk
 	cp modules/scripts/install_drivers.sh /tmp/mount/tyche/
-	#make linux-embedded
+	cp -r programs /tmp/mount/tyche
+	cp -r modules  /tmp/mount/tyche
+
+	# Utility files
+	cp bash_profile /tmp/mount/tyche/.bash_profile
+	chmod 777 /tmp/mount/tyche/.bash_profile
+	cp Makefile /tmp/mount/tyche/Makefile
+	chmod 777 /tmp/mount/tyche/Makefile
+
+# To be used withing Tyche host OS
+install:
+	make -B -C programs/user/enclave install
+
