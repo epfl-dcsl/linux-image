@@ -40,6 +40,7 @@ install: all
 	cp $(TARGET_MODULE).mod $(INSTALL_PATH)
 
 install_disk: all
+	mkdir -p $(DISK_PATH)
 	cp $(TARGET_MODULE).ko $(DISK_PATH)
 	cp $(TARGET_MODULE).sh $(DISK_PATH)
 	cp $(TARGET_MODULE).mod $(DISK_PATH)
