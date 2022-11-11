@@ -17,12 +17,22 @@ void trusted_entry(unsigned long ret_handle, void* args)
 {
   if (args == 0) {
     asm(
-      "movq $0x500, %rax\n\t"
-      "movq $0xbadb1, %rcx\n\t"
+      "movq $0x500, %%rax\n\t"
+      "movq $0xbadb1, %%rcx\n\t"
       "vmcall"
-        );
+      :
+      :
+      : "rax", "rcx", "memory");
   }
   print_message(args);
+  // Use the return handle.
+  asm(
+    "movq $0x998, %%rax\n\t"
+    "movq %0, %%rcx\n\t"
+    "vmcall"
+    :
+    : "rm" (ret_handle)
+    : "rax", "rcx", "memory");
 }
 
 int fibonnacci(int n)

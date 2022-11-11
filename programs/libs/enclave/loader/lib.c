@@ -518,8 +518,9 @@ int enclave_driver_transition(domain_id_t handle, void* args)
     .handle = handle,
     .args = args,
   };
-  if (ioctl(driver_fd, TYCHE_TRANSITION, &transition) != 0) {
-    LOG("driver refused transition\n");
+  int ret = ioctl(driver_fd, TYCHE_TRANSITION, &transition);
+  if (ret != 0) {
+    LOG("driver refused transition: %d\n", ret);
     return -1;
   }
   close(driver_fd);

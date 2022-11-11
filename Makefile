@@ -33,4 +33,4 @@ refresh_disk:
 	make -B -C modules/libraries/tyche-capabilities install_disk
 	make -B -C programs/user/enclave install_disk
 	cp modules/scripts/install_drivers.sh /tmp/mount/tyche/
-	make linux-embedded
+	#make linux-embedded

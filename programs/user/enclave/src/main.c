@@ -40,5 +40,6 @@ int main(void) {
     exit(1);
   } 
   enclave_driver_transition(enclave.domain_handle, shared);
+  printf("Message from the enclave %s\n", (char*)shared);
   return 0;
 }
