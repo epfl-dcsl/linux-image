@@ -9,6 +9,10 @@ CAPA=../../libs/capabilities
 # All the includes
 INCLUDES=-I$(ELF64)/include -I$(LOADER)/include -I$(DRIVER)/include -I$(CAPA)/include
 
+# Enclave includes
+TRUSTED_INCLUDES=-I$(CAPA)/include
+CAPA_LIB=$(CAPA)/libcapabilities.a
+
 # Dynamic libraries
 DYN_LIBS= -l:encl_loader.so -lelf64
 
@@ -25,8 +29,8 @@ a.out: src/main.c enclave
 	cp $(LOADER)/encl.so libs/
 	gcc -g $(INCLUDES) -Wl,-R ./libs/ -L./libs/ -o $@ $< $(DYN_LIBS)
 
-enclave: trusted/main.c trusted/asm.S
-	gcc -g -nostdlib -static -o $@ $^
+enclave: trusted/main.c trusted/asm.S $(CAPA_LIB)
+	gcc -g $(INCLUDES) -nostdlib -static -o $@ $^
 
 install: a.out enclave
 	mkdir -p $(BUSYBOX)

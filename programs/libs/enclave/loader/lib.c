@@ -507,7 +507,7 @@ int delete_enclave(load_encl_t* encl)
   return 0;
 }
 
-int enclave_driver_transition(domain_id_t handle, void* args)
+int enclave_driver_transition(tyche_encl_handle_t handle, void* args)
 {
   int driver_fd = open(ENCL_DRIVER, O_RDWR);
   if (driver_fd < 0) {

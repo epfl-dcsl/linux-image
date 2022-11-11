@@ -64,6 +64,9 @@ struct enclave_t {
   /// Unique identifier within tyche.
   domain_id_t tyche_handle;
 
+  /// The ability to invoke an enclave.
+  capa_index_t invoke;
+
   /// The enclave's physical value of cr3.
   uint64_t cr3;
 

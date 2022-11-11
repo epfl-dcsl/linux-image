@@ -74,8 +74,8 @@ struct tyche_encl_commit_t {
 
 /// Structure to describe a transition.
 struct tyche_encl_transition_t {
-  /// The domain to transition into.
-  domain_id_t handle;
+  /// The enclave handle to transition into.
+  tyche_encl_handle_t handle;
 
   /// Argument for this transition.
   void* args;

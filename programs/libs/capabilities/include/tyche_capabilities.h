@@ -69,6 +69,6 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
 int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t tpe);
 
 /// Seal the domain.
-int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack);
+int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa);
 
 #endif

@@ -456,7 +456,13 @@ int delete_enclave(tyche_encl_handle_t handle)
 
 int enclave_transition(struct tyche_encl_transition_t* transition)
 {
+  struct enclave_t* encl = NULL;
   if (transition == NULL) {
+    return -1;
+  }
+  encl = find_enclave(transition->handle);
+  if (encl == NULL) {
+    pr_err("[TE] unable to find enclave for transition.\n");
     return -1;
   }
  
@@ -464,11 +470,11 @@ int enclave_transition(struct tyche_encl_transition_t* transition)
       "cli\n\t"
       "movq $0x999, %%rax\n\t"
       "movq %0, %%rcx\n\t"
-      "movq %1, %%rdx\n\t"
+      "movq %1, %%r10\n\t"
       "vmcall"
-      :
-      : "rm" (transition->handle), "rm" (transition->args)
-      : "rax", "rcx", "rdx", "memory"
+      : 
+      : "rm" (encl->invoke), "rm" (transition->args)
+      : "rax", "rcx", "r10", "memory"
       );
   return 0;
 }

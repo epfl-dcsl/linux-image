@@ -27,7 +27,7 @@ void trusted_entry(unsigned long ret_handle, void* args)
   print_message(args);
   // Use the return handle.
   asm(
-    "movq $0x998, %%rax\n\t"
+    "movq $0x999, %%rax\n\t"
     "movq %0, %%rcx\n\t"
     "vmcall"
     :

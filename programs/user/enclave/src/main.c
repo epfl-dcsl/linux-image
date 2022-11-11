@@ -39,7 +39,7 @@ int main(void) {
     fprintf(stderr, "Unable to load the enclave.\n");
     exit(1);
   } 
-  enclave_driver_transition(enclave.domain_handle, shared);
+  enclave_driver_transition(enclave.handle, shared);
   printf("Message from the enclave %s\n", (char*)shared);
   return 0;
 }

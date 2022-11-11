@@ -121,7 +121,7 @@ int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
   return 0;
 }
 
-int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack)
+int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa)
 {
   vmcall_frame_t frame;
   frame.id = TYCHE_DOMAIN_SEAL;
@@ -132,5 +132,6 @@ int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t st
   if (tyche_call(&frame) != 0) {
     return -1;
   }
+  *invoke_capa = frame.ret_1;
   return 0;
 }

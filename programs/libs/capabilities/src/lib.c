@@ -202,8 +202,8 @@ failure:
   return -1;
 }
 
-int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack)
+int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa)
 {
   local_domain.print("About to seal a domain.\n");
-  return tyche_domain_seal(handle, cr3, entry, stack);
+  return tyche_domain_seal(handle, cr3, entry, stack, invoke_capa);
 }
