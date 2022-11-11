@@ -457,6 +457,8 @@ int delete_enclave(tyche_encl_handle_t handle)
 int enclave_transition(struct tyche_encl_transition_t* transition)
 {
   struct enclave_t* encl = NULL;
+  unsigned long result = 0;
+  capa_index_t index;
   if (transition == NULL) {
     return -1;
   }
@@ -466,17 +468,24 @@ int enclave_transition(struct tyche_encl_transition_t* transition)
     return -1;
   }
  
-  asm (
+  asm volatile (
       "cli\n\t"
+      "pushq %%rbp\n\t"
+      "pushq %%rdi\n\t"
       "movq $0x999, %%rax\n\t"
-      "movq %0, %%rcx\n\t"
-      "movq %1, %%r10\n\t"
-      "vmcall"
-      : 
+      "movq %2, %%rcx\n\t"
+      "movq %3, %%r10\n\t"
+      "vmcall\n\t"
+      "popq %%rdi\n\t"
+      "popq %%rbp\n\t"
+      "movq %%rax, %0\n\t"
+      "movq %%rcx, %1\n\t"
+      : "=rm" (result), "=rm" (index)
       : "rm" (encl->invoke), "rm" (transition->args)
-      : "rax", "rcx", "r10", "memory"
+      : "rax", "rcx", "rdx", "rsi", "r9", "r10", "memory"
       );
-  return 0;
+  encl->invoke = index;
+  return result;
 }
 
 // —————————————————————————————— Internal API —————————————————————————————— //
