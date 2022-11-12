@@ -1,6 +1,28 @@
 #include "tyche_api.h"
+#include "tyche_capabilities_types.h"
 
-//TODO zero out the frame.
+
+static unsigned long translate_access(capability_type_t tpe)
+{
+  switch(tpe) {
+    case PtEntry:
+    case Confidential:
+    case Shared:
+      return (CAPA_READ|CAPA_EXEC|CAPA_WRITE);
+    case ConfidentialRO:
+    case SharedRO:
+      return (CAPA_READ);
+    case ConfidentialRW:
+    case SharedRW:
+      return (CAPA_READ|CAPA_WRITE);
+    case ConfidentialRX:
+    case SharedRX:
+      return (CAPA_READ|CAPA_EXEC);
+    default:
+      break;
+  }
+  return CAPA_NONE;
+}
 
 /// Simple generic vmcall implementation.
 int tyche_call(vmcall_frame_t* frame)
@@ -88,7 +110,7 @@ int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle)
   return 0;
 }
 
-int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
+int tyche_grant_capa(domain_id_t target, paddr_t handle, capability_type_t tpe, paddr_t* new_handle)
 {
   //We should change that.
   vmcall_frame_t frame;
@@ -98,6 +120,7 @@ int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
   frame.id = TYCHE_DOMAIN_GRANT_REGION;
   frame.value_1 = target;
   frame.value_2 = handle;
+  frame.value_3 = translate_access(tpe);
   if (tyche_call(&frame) != 0) {
     return -1;
   }
@@ -105,7 +128,7 @@ int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
   return 0;
 }
 
-int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
+int tyche_share_capa(domain_id_t target, paddr_t handle, capability_type_t tpe, paddr_t* new_handle)
 {
   vmcall_frame_t frame;
   if (new_handle == NULL) {
@@ -114,6 +137,7 @@ int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle)
   frame.id = TYCHE_DOMAIN_SHARE_REGION;
   frame.value_1 = target;
   frame.value_2 = handle;
+  frame.value_3 = translate_access(tpe);
   if (tyche_call(&frame) != 0) {
     return -1;
   }

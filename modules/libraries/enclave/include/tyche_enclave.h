@@ -12,10 +12,11 @@
 #include "tyche_capabilities_types.h"
 
 // ———————————————————— Constants Defined in the Module ————————————————————— //
-#define TE_READ ((uint64_t)(1ULL << 0))
-#define TE_WRITE ((uint64_t)(1ULL << 1))
-#define TE_USER ((uint64_t)(1ULL << 2))
-#define TE_EXEC ((uint64_t)(1ULL << 3))
+#define TE_READ ((uint64_t)CAPA_READ)
+#define TE_WRITE ((uint64_t)CAPA_WRITE)
+#define TE_EXEC ((uint64_t)CAPA_EXEC)
+#define TE_USER ((uint64_t)(CAPA_MAX << 1))
+#define TE_DEFAULT ((uint64_t)(TE_READ | TE_WRITE | TE_EXEC))
 
 // —————————————————————— Types Exposed by the Library —————————————————————— //
 typedef domain_id_t tyche_encl_handle_t;
@@ -26,11 +27,6 @@ struct tyche_encl_create_t {
 };
 
 typedef capability_type_t tyche_encl_mapping_t;
-/*enum tyche_encl_mapping_t {
-  Confidential,
-  Shared,
-  PtEntry,
-};*/
 
 /// Message type to add a new region.
 struct tyche_encl_add_region_t {

@@ -129,7 +129,7 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
   if (new_handle == NULL) {
     goto failure;
   }
-  if (start >= end || tpe > Other
+  if (start >= end || tpe > Max 
       || ((start % ALIGNMENT) != 0) || ((end % ALIGNMENT) != 0)) {
     goto failure;
   }
@@ -170,14 +170,14 @@ int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t
 
   // Now transfer with the right tpe.
   if (tpe <= Confidential) {
-    if(tyche_grant_capa(dom, split->handle, new_handle) != 0) {
+    if(tyche_grant_capa(dom, split->handle, tpe, new_handle) != 0) {
       local_domain.print("Failure to grant capa.\n");
       goto failure;
     }
     dll_remove(&(local_domain.capabilities), split, list);
     local_domain.dealloc((void*)split);
   } else {
-    if(tyche_share_capa(dom, split->handle, new_handle) != 0) {
+    if(tyche_share_capa(dom, split->handle, tpe, new_handle) != 0) {
       local_domain.print("Failure to gran capa.\n");
       goto failure;
     }

@@ -41,8 +41,8 @@ int tyche_get_domain_id(domain_id_t* domain);
 int tyche_create_domain(domain_id_t* handle);
 int tyche_read_capa(paddr_t handle, paddr_t* start, paddr_t* end, capability_type_t* tpe);
 int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle);
-int tyche_grant_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
-int tyche_share_capa(domain_id_t target, paddr_t handle, paddr_t* new_handle);
+int tyche_grant_capa(domain_id_t target, paddr_t handle, capability_type_t tpe, paddr_t* new_handle);
+int tyche_share_capa(domain_id_t target, paddr_t handle, capability_type_t tpe, paddr_t* new_handle);
 int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_handle);
 
 #endif
