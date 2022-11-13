@@ -63,7 +63,7 @@ static int region_check(struct tyche_encl_add_region_t* region)
     goto failure;
   }
 
-  if (region->tpe != Confidential && region->tpe != Shared && region->tpe != PtEntry) {
+  if (region->tpe > Max || region->tpe < PtEntry) {
     printk(KERN_NOTICE "[TE]: unknown region type.\n");
     goto failure;
   }

@@ -6,13 +6,18 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
 // Extrernal libs.
 #include <encl_loader.h>
 #include <tyche_enclave.h>
 
+#include "my_shared.h"
+
 const char* encl_so = "libs/encl.so";
 const char* trusted = "enclave";
+
+const char* msg = "A message for the enlave.\n\0";
 
 int main(void) {
   printf("Let's create an enclave!\n");
@@ -24,22 +29,46 @@ int main(void) {
     fprintf(stderr, "Error mapping shared memory region.\n");
     exit(1);
   }
-  printf("The shared region is %llx\n", shared);
+  void *sharedRO = mmap(NULL, 0x1000, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE|MAP_POPULATE, -1, 0);
+  if (sharedRO == MAP_FAILED) {
+    fprintf(stderr, "Error mappin the shared read-only region.\n");
+    exit(1);
+  }
 
+  // Write a message.
+  memcpy(sharedRO,msg, strlen(msg)); 
+
+  // Setup a struct describing the message.
+  my_encl_message_t* myencl_msg = (my_encl_message_t*) shared;
+  myencl_msg->message = sharedRO;
+  myencl_msg->message_len = strlen(msg);
+
+  struct tyche_encl_add_region_t extra_ro = {
+    .start = (uint64_t) sharedRO,
+    .end = ((uint64_t)sharedRO)+0x1000,
+    .src = (uint64_t) sharedRO,
+    .flags = TE_READ,
+    .tpe = SharedRO,
+    .extra = NULL,
+  };
+
+  // A shared region that is read-write.
   struct tyche_encl_add_region_t extra = {
     .start = (uint64_t) shared,
     .end = ((uint64_t)shared)+0x1000,
     .src = (uint64_t) shared,
     .flags = TE_READ|TE_WRITE,
     .tpe = Shared,
-    .extra = NULL,
+    .extra = (void*)(&extra_ro),
   };
+
+  // A shared region that is read-only.
   load_encl_t enclave;
   if (load_enclave(trusted, &enclave, &extra) != 0) {
     fprintf(stderr, "Unable to load the enclave.\n");
     exit(1);
   } 
   enclave_driver_transition(enclave.handle, shared);
-  printf("Message from the enclave %s\n", (char*)shared);
+  printf("Message from the enclave %s\n", myencl_msg->reply);
   return 0;
 }

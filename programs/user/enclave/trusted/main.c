@@ -1,14 +1,19 @@
+#include "my_shared.h"
+
 const char* message = "Hello World!\n\t";
 
 char encl_stack[0x4000] __attribute__((section(".encl_stack")));
 
 
-void print_message(void* dest)
+void print_message(void* source)
 {
+  my_encl_message_t* msg = (my_encl_message_t*) source;
+
   // Handmade memcpy.
-  char* ptr = (char*) dest;
-  for (int i = 0; i < 14; i++) {
-    ptr[i] = message[i];
+  char* ptr = msg->reply;
+  char* src = (char*) msg->message;
+  for (int i = 0; i < msg->message_len; i++) {
+    ptr[i] = src[i];
   } 
 }
 
