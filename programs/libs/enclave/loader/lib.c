@@ -490,7 +490,10 @@ int delete_enclave(load_encl_t* encl)
     return -1;
   } 
 
-  // TODO call the driver to get back all the pages.
+  if (ioctl(encl->driver_fd, TYCHE_ENCLAVE_DELETE, encl->handle) != 0) {
+    LOG("delete_enclave failure from the driver.");
+    return -1;
+  }
   
   // Cleaning up the structure.
   free(encl->sections);

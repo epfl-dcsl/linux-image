@@ -9,6 +9,7 @@
 #define TYCHE_DOMAIN_SEAL 0x102;
 #define TYCHE_DOMAIN_GRANT_REGION 0x103;
 #define TYCHE_DOMAIN_SHARE_REGION 0x104
+#define TYCHE_DOMAIN_REVOK_REGION 0x105;
 #define TYCHE_REGION_SPLIT 0x200;
 #define TYCHE_REGION_GET_INFO 0x201;
 #define TYCHE_CONFIG_NB_REGIONS 0x400;
@@ -44,5 +45,6 @@ int tyche_split_capa(paddr_t handle, paddr_t split_addr, paddr_t* new_handle);
 int tyche_grant_capa(domain_id_t target, paddr_t handle, capability_type_t tpe, paddr_t* new_handle);
 int tyche_share_capa(domain_id_t target, paddr_t handle, capability_type_t tpe, paddr_t* new_handle);
 int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_handle);
+int tyche_domain_revoke(paddr_t handle);
 
 #endif

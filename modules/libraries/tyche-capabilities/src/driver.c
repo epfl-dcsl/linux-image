@@ -54,6 +54,11 @@ int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t entry, paddr_t stack, c
 {
   return seal_domain(dom, cr3, entry, stack, invoke_capa);
 }
+
+int tc_revoke_region(paddr_t handle)
+{
+  return revoke_capa(handle); 
+}
 // ————————————————————————— Module's Registration —————————————————————————— //
 
 module_init(tyche_capabilities_init);
@@ -61,3 +66,4 @@ module_exit(tyche_capabilities_exit);
 EXPORT_SYMBOL(tc_create_domain);
 EXPORT_SYMBOL(tc_transfer_capability);
 EXPORT_SYMBOL(tc_seal_domain);
+EXPORT_SYMBOL(tc_revoke_region);

@@ -207,3 +207,8 @@ int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, c
   local_domain.print("About to seal a domain.\n");
   return tyche_domain_seal(handle, cr3, entry, stack, invoke_capa);
 }
+
+int revoke_capa(paddr_t handle)
+{
+  return tyche_domain_revoke(handle);  
+}

@@ -70,5 +70,11 @@ int main(void) {
   } 
   enclave_driver_transition(enclave.handle, shared);
   printf("Message from the enclave %s\n", myencl_msg->reply);
+  printf("Now let's delete the enclave.\n");
+  if (delete_enclave(&enclave) != 0) {
+    printf("Error deleting the enclave!\n");
+    return -1;
+  }
+  printf("Successfully delete the enclave!\n");
   return 0;
 }

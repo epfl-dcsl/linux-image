@@ -159,3 +159,17 @@ int tyche_domain_seal(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t st
   *invoke_capa = frame.ret_1;
   return 0;
 }
+
+int tyche_domain_revoke(paddr_t handle)
+{
+  vmcall_frame_t frame;
+  frame.id = TYCHE_DOMAIN_REVOK_REGION;
+  frame.value_1 = handle;
+  frame.value_2 = 0;
+  frame.value_3 = 0;
+  frame.value_4 = 0;
+  if (tyche_call(&frame) != 0) {
+    return -1;
+  }
+  return 0;
+}

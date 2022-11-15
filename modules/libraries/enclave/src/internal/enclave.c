@@ -421,7 +421,7 @@ int delete_enclave(tyche_encl_handle_t handle)
   }
   // Collect all the handles and re-merge.
   dll_foreach(&(encl->all_pages), pa_reg, globals) {
-    //TODO clean up and merge.
+    tyche_revoke_region(pa_reg->handle);
   }
 
   // Delete all the pas in all_pages.

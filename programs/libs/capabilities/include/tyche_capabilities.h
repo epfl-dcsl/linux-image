@@ -71,4 +71,7 @@ int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t 
 /// Seal the domain.
 int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa);
 
+/// Revoke access to a region.
+int revoke_capa(paddr_t handle);
+
 #endif
