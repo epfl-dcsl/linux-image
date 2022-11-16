@@ -7,13 +7,30 @@
 
 #define ALIGNMENT (0x1000)
 
+typedef enum capa_status_t {
+  ActiveCapa = 0,
+  SharedCapa = 1,
+  PausedCapa = 2,
+} capa_status_t;
+
+typedef struct revok_handle_t {
+  domain_id_t domain;
+  paddr_t revok_handle;
+  dll_elem(struct revok_handle_t, list);
+} revok_handle_t;
+
 /// Capability that confers access to a memory region.
 typedef struct capability_t {
-  capa_index_t index;
   paddr_t handle;
   paddr_t start;
   paddr_t end;
-  capability_type_t tpe;
+  unsigned int is_owned;
+  unsigned int is_shared;
+  unsigned long access;
+
+  // Revocation related.
+  capa_status_t status;
+  dll_list(revok_handle_t, revoks);
 
   // This structure can be put in a double-linked list
   dll_elem(struct capability_t, list);
@@ -63,15 +80,12 @@ capability_t* split_capa(capability_t* capa, paddr_t split_addr);
 /// domain.
 /// The resulting new capability's handle is returned in new_handle.
 /// @warn: this function implements both grant and share.
-int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe, paddr_t* new_handle);
-
-/// Merges the referenced capability defined by start/end into the local domain.
-int merge_capa(domain_id_t owner, paddr_t start, paddr_t end, capability_type_t tpe);
+int transfer_capa(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe);
 
 /// Seal the domain.
 int seal_domain(domain_id_t handle, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa);
 
 /// Revoke access to a region.
-int revoke_capa(paddr_t handle);
+int revoke_capa(domain_id_t dom, paddr_t start, paddr_t end);
 
 #endif

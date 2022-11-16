@@ -68,6 +68,7 @@ int main(void) {
     fprintf(stderr, "Unable to load the enclave.\n");
     exit(1);
   } 
+  printf("Shared regions are %lx & %lx\n", shared, sharedRO);
   enclave_driver_transition(enclave.handle, shared);
   printf("Message from the enclave %s\n", myencl_msg->reply);
   printf("Now let's delete the enclave.\n");

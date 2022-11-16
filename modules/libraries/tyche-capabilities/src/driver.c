@@ -24,7 +24,7 @@ static void local_free(void* ptr)
 
 static void local_print(const char *msg)
 {
-  printk(KERN_NOTICE "[CAPA]: %s",msg);
+  printk(KERN_ERR "[CAPA]: %s",msg);
 }
 
 // —————————————————————— Loading/Unloading  functions —————————————————————— //
@@ -45,9 +45,9 @@ int tc_create_domain(domain_id_t* handle)
   return create_domain(handle);
 }
 
-int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe, paddr_t* new_handle)
+int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe)
 {
-  return transfer_capa(dom, start, end, tpe, new_handle);
+  return transfer_capa(dom, start, end, tpe);
 }
 
 int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa)
@@ -55,9 +55,9 @@ int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t entry, paddr_t stack, c
   return seal_domain(dom, cr3, entry, stack, invoke_capa);
 }
 
-int tc_revoke_region(paddr_t handle)
+int tc_revoke_region(domain_id_t dom, paddr_t start, paddr_t end)
 {
-  return revoke_capa(handle); 
+  return revoke_capa(dom, start, end); 
 }
 // ————————————————————————— Module's Registration —————————————————————————— //
 

@@ -46,11 +46,6 @@ struct pa_region_t {
 
   dll_elem(struct pa_region_t, list);
   dll_elem(struct pa_region_t, globals);
-
-  // When the pa_region is in all_pages, i.e., added with globals,
-  // it is used by the driver to split a capability.
-  // The handle references the new capability to access this region.
-  paddr_t handle;
 };
 
 /// Describes an enclave.

@@ -63,7 +63,7 @@ static int region_check(struct tyche_encl_add_region_t* region)
     goto failure;
   }
 
-  if (region->tpe > Max || region->tpe < PtEntry) {
+  if (region->tpe > MaxTpe || region->tpe < MinTpe) {
     printk(KERN_NOTICE "[TE]: unknown region type.\n");
     goto failure;
   }
@@ -341,7 +341,7 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
   dll_foreach(&(encl->all_pages), pa_region, globals) {
     // The call will set the handle in the pa_region.
     if (tyche_split_grant(encl, pa_region) != 0) {
-      pr_err("[TE]: tyche_split grant failed.\n");
+      pr_err("[TE]: tyche_split grant failed %d.\n", pa_region->tpe);
       goto failure;
     }
   }
@@ -421,7 +421,10 @@ int delete_enclave(tyche_encl_handle_t handle)
   }
   // Collect all the handles and re-merge.
   dll_foreach(&(encl->all_pages), pa_reg, globals) {
-    tyche_revoke_region(pa_reg->handle);
+    if (tyche_revoke_region(encl->tyche_handle, pa_reg->start, pa_reg->end) != 0) {
+      pr_err("[TE] failed to revoke a region.\n");
+      return -1;
+    }
   }
 
   // Delete all the pas in all_pages.

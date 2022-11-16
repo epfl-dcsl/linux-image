@@ -20,6 +20,7 @@
   do { \
     fprintf(stderr, "[encl_loader] @%s :", __func__); \
     fprintf(stderr, __VA_ARGS__); \
+    fprintf(stderr, "\n"); \
   } while(0);
 
 // ——————————————————————————————— Constants ———————————————————————————————— //
@@ -226,7 +227,6 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
       .flags = TE_READ|TE_EXEC|TE_USER,
       .tpe = Shared,
     };
-
     if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
       LOG("create_enclave unable to add encl.so region.\n");
       goto fail_free;

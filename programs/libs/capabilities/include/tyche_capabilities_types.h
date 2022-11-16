@@ -14,18 +14,20 @@ typedef unsigned long domain_id_t;
 /// Internal definition of index.
 typedef unsigned long capa_index_t;
 
+//TODO change this to reflect revocation better.
 /// Valid types for a capability.
 typedef enum capability_type_t {
-  PtEntry = 0,
-  ConfidentialRO = 1,
-  ConfidentialRW = 2,
-  ConfidentialRX = 3,
-  Confidential = 4,
-  SharedRO = 5,
-  SharedRW = 6,
-  SharedRX = 7,
-  Shared = 8,
-  Max = 8,
+  MinTpe = 0,
+  SharedRO = 0,
+  SharedRW = 1,
+  SharedRX = 2,
+  Shared = 3,
+  ConfidentialRO = 4,
+  ConfidentialRW = 5,
+  ConfidentialRX = 6,
+  PtEntry = 7,
+  Confidential = 7,
+  MaxTpe = 7,
 } capability_type_t;
 
 /// Predefined values for capabilities
@@ -35,5 +37,8 @@ typedef enum capability_type_t {
 #define CAPA_EXEC ((unsigned long)1 << 2)
 #define CAPA_REVOK ((unsigned long)1 << 3)
 #define CAPA_MAX CAPA_REVOK
+
+#define TYCHE_OWNED ((unsigned long)0x1)
+#define TYCHE_SHARED ((unsigned long)0x2)
 
 #endif

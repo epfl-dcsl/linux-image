@@ -3,9 +3,9 @@
 #include "tyche_capabilities_types.h"
 
 extern int tc_create_domain(domain_id_t* handle);
-extern int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe, paddr_t* new_handle);
+extern int tc_transfer_capability(domain_id_t dom, paddr_t start, paddr_t end, capability_type_t tpe);
 extern int tc_seal_domain(domain_id_t dom, paddr_t cr3, paddr_t entry, paddr_t stack, capa_index_t* invoke_capa);
-extern int tc_revoke_region(paddr_t handle);
+extern int tc_revoke_region(domain_id_t dom, paddr_t start, paddr_t end);
 
 int tyche_domain_create(struct enclave_t* encl)
 {
@@ -22,7 +22,7 @@ int tyche_split_grant(struct enclave_t* enclave, struct pa_region_t* region)
     return -1;
   } 
   return tc_transfer_capability(enclave->tyche_handle, region->start,
-      region->end, region->tpe, &(region->handle));
+      region->end, region->tpe);
 }
 
 int tyche_seal_enclave(struct enclave_t* enclave)
@@ -34,7 +34,7 @@ int tyche_seal_enclave(struct enclave_t* enclave)
   return tc_seal_domain(enclave->tyche_handle, enclave->cr3, enclave->entry, enclave->stack, &enclave->invoke);
 }
 
-int tyche_revoke_region(paddr_t handle)
+int tyche_revoke_region(domain_id_t dom, paddr_t start, paddr_t end)
 {
-  return tc_revoke_region(handle);
+  return tc_revoke_region(dom, start, end);
 }
