@@ -90,6 +90,8 @@ int tyche_read_capa(capability_t* capa)
   capa->is_owned = frame.ret_3 & TYCHE_OWNED;
   capa->is_shared = frame.ret_3 & TYCHE_SHARED;
   capa->access = frame.ret_4;
+  dll_init_elem(capa, list);
+  dll_init_list(&(capa->revoks));
   return 0;
 }
 

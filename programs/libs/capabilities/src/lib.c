@@ -357,7 +357,7 @@ int revoke_capa(domain_id_t id, paddr_t start, paddr_t end)
   }
 attempt_merge:
   if (curr->status != ActiveCapa) {
-    local_domain.print("Attempting to merge non active capa");
+    local_domain.print("Attempting to merge non active capa\n");
     goto failure;
   }
   // Attempt a merge on the left.
