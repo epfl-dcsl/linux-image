@@ -5,6 +5,8 @@
 #define NULL ((void*)0)
 #endif
 
+#include "dll.h"
+
 /// Internal definition of our types so we can move to 32 bits.
 typedef long long unsigned int paddr_t;
 
@@ -14,31 +16,120 @@ typedef unsigned long domain_id_t;
 /// Internal definition of index.
 typedef unsigned long capa_index_t;
 
-//TODO change this to reflect revocation better.
-/// Valid types for a capability.
-typedef enum capability_type_t {
-  MinTpe = 0,
-  SharedRO = 0,
-  SharedRW = 1,
-  SharedRX = 2,
-  Shared = 3,
-  ConfidentialRO = 4,
-  ConfidentialRW = 5,
-  ConfidentialRX = 6,
-  PtEntry = 7,
-  Confidential = 7,
-  MaxTpe = 7,
-} capability_type_t;
+/// Mirrors the types defined in crates/capabilities/src/lib.rs.
+typedef enum capa_type_t {
+  Resource = 0,
+  Revocation = 1 << 3,
+} capa_type_t;
 
-/// Predefined values for capabilities
-#define CAPA_NONE ((unsigned long)0)
-#define CAPA_READ ((unsigned long)1 << 0)
-#define CAPA_WRITE ((unsigned long)1 << 1)
-#define CAPA_EXEC ((unsigned long)1 << 2)
-#define CAPA_REVOK ((unsigned long)1 << 3)
-#define CAPA_MAX CAPA_REVOK
+/// Mirrors the various types of resources handled by the capabilities.
+typedef enum capa_rtype_t {
+  Domain = 1 << 0,
+  Region = 1 << 1,
+  CPU = 1 << 2,
+} capa_rtype_t;
 
-#define TYCHE_OWNED ((unsigned long)0x1)
-#define TYCHE_SHARED ((unsigned long)0x2)
+// Status of a domain capability.
+typedef enum domain_status_t {
+  None = 0,
+  Unsealed = 1,
+  Sealed = 2,
+  Channel = 3,
+  Transition = 4,
+} domain_status_t;
+
+/// Access right information for a region capability.
+typedef struct capa_region_t {
+  paddr_t start;
+  paddr_t end;
+  paddr_t flags;
+} capa_region_t;
+
+/// Access right information for a cpu capability.
+typedef struct capa_cpu_t {
+  paddr_t flags;
+} capa_cpu_t;
+
+/// Access right information for a domain capability.
+typedef struct capa_domain_t {
+  domain_status_t status;
+  union {
+    // If the status is Sealed or Unsealed.
+    struct {
+      char spawn;
+      char comm;
+    } capas;
+    // If the status is Transition.
+    int transition;
+  } info;
+} capa_domain_t;
+
+/// A capability can be any of these three types.
+typedef union capa_descriptor_t {
+  capa_domain_t domain;
+  capa_region_t region;
+  capa_cpu_t cpu;
+} capa_descriptor_t;
+
+/// Capability that confers access to a memory region.
+typedef struct capability_t {
+  // General capability information.
+  capa_index_t local_id;
+  capa_type_t capa_type;
+  capa_rtype_t resource_type;
+  capa_descriptor_t access;
+
+  // This is stored for convenience but might not be up-to-date.
+  unsigned long last_read_ref_count;
+
+  // This structure can be put in a double-linked list
+  dll_elem(struct capability_t, list);
+} capability_t;
+
+typedef void* (*capa_alloc_t)(unsigned long size);
+typedef void (*capa_dealloc_t)(void* ptr);
+typedef void (*capa_dbg_print_t)(const char* msg);
+
+/// Represents the current domain's metadata.
+typedef struct domain_t {
+  // Allocate ids from this counter for children domains.
+  domain_id_t id_counter;
+
+  // reference to ourselves.
+  capability_t* self;
+
+  // The allocator to use whenever we need a new structure.
+  capa_alloc_t alloc;
+  capa_dealloc_t dealloc;
+  capa_dbg_print_t print;
+
+  // All the children for this domain.
+  dll_list(struct child_domain_t, children);
+
+  // The list of used capabilities for this domain.
+  dll_list(struct capability_t, capabilities);
+} domain_t;
+
+/// Represents a child domain.
+/// We keep track of:
+/// 1) The main communication channel.
+/// 2) The revocation handle to kill the domain.
+/// 3) All the resources we passed to the domain.
+typedef struct child_domain_t {
+  // The domain's local id.
+  domain_id_t id;
+
+  // Handle to the domain, this would be first an unsealed than a channel.
+  capability_t* manipulate;
+
+  // Handle to revoke the domain after a seal.
+  capability_t* revoke;
+
+  // All the revocations for resources passed to the domain.
+  dll_list(struct capability_t, capabilities);
+
+  // This structure can be put in a double-linked list.
+  dll_elem(struct child_domain_t, list);
+} child_domain_t;
 
 #endif
