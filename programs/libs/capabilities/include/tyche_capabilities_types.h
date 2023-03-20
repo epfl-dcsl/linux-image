@@ -94,6 +94,11 @@ typedef struct capability_t {
   // This is stored for convenience but might not be up-to-date.
   unsigned long last_read_ref_count;
 
+  // Tree structure.
+  struct capability_t* parent;
+  struct capability_t* left;
+  struct capability_t* right;
+
   // This structure can be put in a double-linked list
   dll_elem(struct capability_t, list);
 } capability_t;

@@ -112,3 +112,28 @@ int tyche_grant(
 failure:
   return FAILURE;
 }
+
+int tyche_share(
+    capa_index_t* left,
+    capa_index_t dest,
+    capa_index_t capa,
+    unsigned long a1,
+    unsigned long a2,
+    unsigned long a3)
+{
+  vmcall_frame_t frame = {
+    .vmcall = TYCHE_SHARE,
+    .arg_1 = dest,
+    .arg_2 = capa,
+    .arg_3 = a1,
+    .arg_4 = a2,
+    .arg_5 = a3
+  };
+  if (left == NULL || tyche_call(&frame) != SUCCESS) {
+    goto failure;
+  }
+  *left = frame.value_1; 
+  return SUCCESS;
+failure:
+  return FAILURE;
+}

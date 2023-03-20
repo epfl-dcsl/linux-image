@@ -72,4 +72,12 @@ int tyche_grant(
     unsigned long a2,
     unsigned long a3);
 
+int tyche_share(
+    capa_index_t* left,
+    capa_index_t dest,
+    capa_index_t capa,
+    unsigned long a1,
+    unsigned long a2,
+    unsigned long a3);
+
 #endif

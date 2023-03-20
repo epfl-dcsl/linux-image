@@ -13,6 +13,13 @@ void local_memcpy(void* dest, void *src, unsigned long n) {
     cdest[i] = csrc[i];
   }
 }
+
+void local_memset(void* dest, unsigned long n) {
+  char *cdest = (char*) dest;
+  for (unsigned long i = 0; i < n; i++) {
+    cdest[i] = 0;
+  }
+}
 // —————————————————————————————— Public APIs ——————————————————————————————— //
 
 
@@ -127,6 +134,9 @@ int create_domain(unsigned long spawn, unsigned long comm)
   child->manipulate = child_capa; 
   dll_init_list(&(child->capabilities));
   dll_init_elem(child, list);
+  revocation_capa->left = NULL;
+  revocation_capa->right = child_capa;
+  child_capa->parent = revocation_capa;
 
   // Add the child to the local_domain.
   dll_add(&(local_domain.children), child, list);
@@ -183,15 +193,34 @@ int duplicate_capa(
   }
 
   // Update the capability.
-  enumerate_capa(capa->local_id, capa);
+  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
+    local_domain.print("We failed to enumerate the root of a duplicate!");
+    goto fail_right;
+  }
+  capa->left = *left;
+  capa->right = *right;
+  
   // Initialize the left.
-  enumerate_capa((*left)->local_id, *left);
+  if(enumerate_capa((*left)->local_id, *left) != SUCCESS) {
+    local_domain.print("We failed to enumerate the left of duplicate!");
+    goto fail_right;
+  }
   dll_init_elem((*left), list);
   dll_add(&(local_domain.capabilities), (*left), list); 
+  (*left)->parent = capa;
+  (*left)->left = NULL;
+  (*left)->right = NULL;
+
   // Initialize the right.
-  enumerate_capa((*right)->local_id, (*right));
+  if (enumerate_capa((*right)->local_id, (*right)) != SUCCESS) {
+    local_domain.print("We failed to enumerate the right of duplicate!");
+    goto fail_right;
+  }
   dll_init_elem((*right), list);
   dll_add(&(local_domain.capabilities), (*right), list);
+  (*right)->parent = capa;
+  (*right)->left = NULL;
+  (*right)->right = NULL;
 
   // All done!
   return SUCCESS;
@@ -236,8 +265,8 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
     if (capa->capa_type != Resource || capa->resource_type != Region) {
       continue;
     }
-    if (dll_contains(capa->access.region.start, capa->access.region.end, start) && 
-        dll_contains(capa->access.region.start, capa->access.region.end, end)) {
+    if ((dll_contains(capa->access.region.start, capa->access.region.end, start)) && 
+        capa->access.region.start <= end && capa->access.region.end >= end) {
       // Found the capability.
       break;
     }
@@ -322,6 +351,86 @@ grant:
 
   // We are done!
   return SUCCESS;
+failure:
+  return FAILURE;
+}
+
+
+int share_region(
+    domain_id_t id, paddr_t start, paddr_t end, memory_access_right_t access) {
+  child_domain_t* child = NULL;
+  capability_t* capa = NULL, *left = NULL;
+
+  // Quick checks.
+  if (start >= end) {
+    local_domain.print("Error[grant_region]: start is greater or equal to end.\n");
+    goto failure;
+  }
+
+  // Find the target domain.
+  dll_foreach(&(local_domain.children), child, list) {
+    if (child->id == id) {
+      // Found the right one.
+      break;
+    }
+  }
+
+  // We were not able to find the child.
+  if (child == NULL) {
+    local_domain.print("Error[grant_region]: child not found."); 
+    goto failure;
+  }
+
+  // Now attempt to find the capability.
+  dll_foreach(&(local_domain.capabilities), capa, list) {
+    if (capa->capa_type != Resource || capa->resource_type != Region) {
+      continue;
+    }
+    // TODO check dll_contains, might fail on end.
+    if (dll_contains(capa->access.region.start, capa->access.region.end, start) && 
+        capa->access.region.start <= end &&  capa->access.region.end >= end) {
+      // Found the capability.
+      break;
+    }
+  }
+
+  // We were not able to find the capability.
+  if (capa == NULL) {
+    goto failure;
+  }
+
+  // A share is less complex than a grant because we do not need to carve out
+  // the address space, but we need to keep track of how to merge things back.
+  left = (capability_t*) local_domain.alloc(sizeof(capability_t)); 
+  if (left == NULL) {
+    goto failure;
+  }
+  if (tyche_share(&(left->local_id), child->manipulate->local_id,
+        capa->local_id, start, end, (unsigned long) access) != SUCCESS) {
+    goto fail_left;
+  }
+  
+  // Now we update the capabilities.
+  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
+    local_domain.print("We failed enumerating the revocation after share.");
+    goto fail_left;
+  }
+  dll_remove(&(local_domain.capabilities), capa, list);
+  dll_add(&(child->capabilities), capa, list);
+  capa->left = left;
+  capa->right = NULL;
+
+  if (enumerate_capa(left->local_id, left)) {
+    local_domain.print("We failed enumerating the remainder of the share.");
+    goto fail_left;
+  }
+  left->left = NULL;
+  left->right = NULL;
+  left->parent = capa;
+  dll_add(&(local_domain.capabilities), left, list);
+
+fail_left:
+  local_domain.dealloc(left);
 failure:
   return FAILURE;
 }
