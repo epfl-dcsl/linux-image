@@ -4,15 +4,18 @@
 #include "tyche_capabilities_types.h"
 
 /// Copied from the tyche source code
-#define TYCHE_CREATE_DOMAIN 1
-#define TYCHE_SEAL_DOMAIN 2
-#define TYCHE_SHARE 3
-#define TYCHE_GRANT 4
-#define TYCHE_GIVE 5
-#define TYCHE_REVOKE 6
-#define TYCHE_ENUMERATE 7
-#define TYCHE_SWITCH 8
-#define TYCHE_EXIT 9
+typedef enum tyche_monitor_call_t {
+  TYCHE_CREATE_DOMAIN = 1,
+  TYCHE_SEAL_DOMAIN = 2,
+  TYCHE_SHARE = 3,
+  TYCHE_GRANT = 4,
+  TYCHE_GIVE = 5,
+  TYCHE_REVOKE = 6,
+  TYCHE_DUPLICATE = 7,
+  TYCHE_ENUMERATE = 8,
+  TYCHE_SWITCH = 9,
+  TYCHE_EXIT = 10,
+} tyche_monitor_call_t;
 
 #define TYCHE_CAPA_NULL ((capa_index_t)0)
 
@@ -30,6 +33,8 @@ typedef struct vmcall_frame_t {
   unsigned long arg_3;
   unsigned long arg_4;
   unsigned long arg_5;
+  unsigned long arg_6;
+  unsigned long arg_7;
 
   // Results.
   unsigned long value_1;
@@ -48,5 +53,23 @@ int tyche_create_domain(
     capa_index_t* revocation,
     unsigned long spawn,
     unsigned long comm);
+
+int tyche_duplicate(
+    capa_index_t* left,
+    capa_index_t* right,
+    capa_index_t capa,
+    unsigned long a1_1,
+    unsigned long a1_2,
+    unsigned long a1_3,
+    unsigned long a2_1,
+    unsigned long a2_2,
+    unsigned long a2_3);
+
+int tyche_grant(
+    capa_index_t dest,
+    capa_index_t capa,
+    unsigned long a1,
+    unsigned long a2,
+    unsigned long a3);
 
 #endif

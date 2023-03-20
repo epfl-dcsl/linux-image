@@ -7,6 +7,9 @@
 
 #include "dll.h"
 
+#define SUCCESS (0)
+#define FAILURE (-1)
+
 /// Internal definition of our types so we can move to 32 bits.
 typedef long long unsigned int paddr_t;
 
@@ -29,7 +32,7 @@ typedef enum capa_rtype_t {
   CPU = 1 << 2,
 } capa_rtype_t;
 
-// Status of a domain capability.
+/// Status of a domain capability.
 typedef enum domain_status_t {
   None = 0,
   Unsealed = 1,
@@ -37,6 +40,15 @@ typedef enum domain_status_t {
   Channel = 3,
   Transition = 4,
 } domain_status_t;
+
+/// Region Access Rights
+typedef enum memory_access_right_t {
+  MEM_READ = 1 << 0,
+  MEM_WRITE = 1 << 1,
+  MEM_EXEC = 1 << 2,
+  MEM_SUPER = 1 << 3,
+  MEM_SHARE = 1 << 4,
+} memory_access_right_t;
 
 /// Access right information for a region capability.
 typedef struct capa_region_t {

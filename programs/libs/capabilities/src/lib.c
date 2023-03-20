@@ -31,7 +31,6 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
   dll_init_list(&(local_domain.children));
 
   // Start enumerating the domain's capabilities.
-  // TODO identify self domain.
   for (i = 0; i < CAPAS_PER_DOMAIN; i++) {
     capability_t tmp_capa;
     if (enumerate_capa(i, &tmp_capa) != 0) {
@@ -64,7 +63,7 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
     // Add the capability to the list.
     dll_add(&(local_domain.capabilities), capa, list);
   }
-  return 0;
+  return SUCCESS;
 failure:
   while(!dll_is_empty(&local_domain.capabilities))
   {
@@ -73,7 +72,7 @@ failure:
     local_domain.dealloc((void*)capa);
   }
 fail: 
-  return -1;
+  return FAILURE;
 }
 
 int create_domain(unsigned long spawn, unsigned long comm)
@@ -139,7 +138,7 @@ int create_domain(unsigned long spawn, unsigned long comm)
   dll_add(&(local_domain.capabilities), child_capa, list);
 
   // All done!
-  return 0;
+  return SUCCESS;
 
   // Failure paths.
 fail_child_capa:
@@ -149,5 +148,180 @@ fail_revocation:
 fail_child:
   local_domain.dealloc(child);
 fail:
-  return -1;
+  return FAILURE;
+}
+
+int duplicate_capa(
+    capability_t** left,
+    capability_t** right,
+    capability_t* capa,
+    unsigned long a1_1,
+    unsigned long a1_2,
+    unsigned long a1_3,
+    unsigned long a2_1,
+    unsigned long a2_2,
+    unsigned long a2_3) {
+  if (left == NULL || right == NULL || capa == NULL) {
+    goto failure;
+  }
+
+  // Attempt to allocate left and right.
+  *left = (capability_t*) local_domain.alloc(sizeof(capability_t));
+  if (*left == NULL) {
+    goto failure;
+  }
+  *right = (capability_t*) local_domain.alloc(sizeof(capability_t));
+  if (*right == NULL) {
+    goto fail_left;
+  }
+
+  // Call duplicate.
+  if (tyche_duplicate(
+        &((*left)->local_id), &((*right)->local_id), capa->local_id,
+        a1_1, a1_2, a1_3, a2_1, a2_2, a2_3 ) != SUCCESS) {
+    goto fail_right; 
+  }
+
+  // Update the capability.
+  enumerate_capa(capa->local_id, capa);
+  // Initialize the left.
+  enumerate_capa((*left)->local_id, *left);
+  dll_init_elem((*left), list);
+  dll_add(&(local_domain.capabilities), (*left), list); 
+  // Initialize the right.
+  enumerate_capa((*right)->local_id, (*right));
+  dll_init_elem((*right), list);
+  dll_add(&(local_domain.capabilities), (*right), list);
+
+  // All done!
+  return SUCCESS;
+
+  // Failure paths.
+fail_right:
+  local_domain.dealloc(*right);
+fail_left:
+  local_domain.dealloc(*left);
+failure:
+  return FAILURE;
+}
+
+//TODO: for the moment only handle the case where the region is fully contained
+//within one capability.
+int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right_t access) {
+  child_domain_t* child = NULL;
+  capability_t* capa = NULL;
+
+  // Quick checks.
+  if (start >= end) {
+    local_domain.print("Error[grant_region]: start is greater or equal to end.\n");
+    goto failure;
+  }
+
+  // Find the target domain.
+  dll_foreach(&(local_domain.children), child, list) {
+    if (child->id == id) {
+      // Found the right one.
+      break;
+    }
+  }
+
+  // We were not able to find the child.
+  if (child == NULL) {
+    local_domain.print("Error[grant_region]: child not found."); 
+    goto failure;
+  }
+
+  // Now attempt to find the capability.
+  dll_foreach(&(local_domain.capabilities), capa, list) {
+    if (capa->capa_type != Resource || capa->resource_type != Region) {
+      continue;
+    }
+    if (dll_contains(capa->access.region.start, capa->access.region.end, start) && 
+        dll_contains(capa->access.region.start, capa->access.region.end, end)) {
+      // Found the capability.
+      break;
+    }
+  }
+
+  // We were not able to find the capability.
+  if (capa == NULL) {
+    goto failure;
+  }
+
+  // The region is in the middle, requires two splits.
+  if (capa->access.region.start < start && capa->access.region.end > end) {
+    // Middle case.
+    // capa: [s.......................e]
+    // grant:     [m.....me]
+    // Duplicate such that we have [s..m] [m..me..e]
+    // And then update capa to be equal to the right
+    capability_t* left = NULL, *right = NULL;
+    if (duplicate_capa(&left, &right, capa,
+          capa->access.region.start, start, capa->access.region.flags,
+          start, capa->access.region.end, capa->access.region.flags) != SUCCESS) {
+      goto failure;
+    }
+    // Update the capa to point to the right.
+    capa = right;
+  }
+
+  // Requires a duplicate.
+  if ((capa->access.region.start == start && capa->access.region.end > end) ||
+      (capa->access.region.start < start && capa->access.region.end == end)) {
+    paddr_t s = 0, m = 0, e = 0;
+    capability_t* left = NULL, *right = NULL;
+    capability_t** to_grant = NULL; 
+
+    if (capa->access.region.start == start && capa->access.region.end > end) {
+      // Left case.
+      // capa: [s ............e].
+      // grant:[s.......m].
+      // duplicate: [s..m] - [m..e]
+      // Grant the first portion.
+      s = capa->access.region.start;
+      m = end;
+      e = capa->access.region.end;
+      to_grant = &left;
+    } else {
+      // Right case.
+      // capa: [s ............e].
+      // grant:      [m.......e].
+      // duplicate: [s..m] - [m..e]
+      // Grant the second portion.
+      s = capa->access.region.start;
+      m = start;
+      e = capa->access.region.end;
+      to_grant = &right;
+    }
+
+    // Do the duplicate.
+    if (duplicate_capa(&left, &right, capa, s, m, capa->access.region.flags,
+          m, e, capa->access.region.flags) != SUCCESS) {
+      goto failure;
+    }
+   
+    // Now just update the capa to grant.
+    capa = *to_grant;
+  } 
+
+  // At this point, capa should be a perfect overlap.
+  if (capa == NULL || 
+      !(capa->access.region.start == start && capa->access.region.end == end)) {
+    goto failure;
+  }
+
+grant:
+  if (tyche_grant(child->manipulate->local_id, capa->local_id,
+        start, end, (unsigned long) access) != SUCCESS) {
+    goto failure;
+  }
+
+  // Now we update the capabilities.
+  dll_remove(&(local_domain.capabilities), capa, list);
+  dll_add(&(child->capabilities), capa, list);
+
+  // We are done!
+  return SUCCESS;
+failure:
+  return FAILURE;
 }

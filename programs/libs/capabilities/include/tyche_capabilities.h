@@ -19,4 +19,24 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
 /// Sets the result inside the provided handle.
 int create_domain(unsigned long spawn, unsigned long comm);
 
+/// Duplicate capability.
+int duplicate_capa(
+    capability_t** left,
+    capability_t** right,
+    capability_t* capa,
+    unsigned long a1_1,
+    unsigned long a1_2,
+    unsigned long a1_3,
+    unsigned long a2_1,
+    unsigned long a2_2,
+    unsigned long a2_3);
+
+/// Grant a memory region.
+/// Finds the correct capability and grants the region to the target domain.
+int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right_t access);
+
+/// Share a memory region.
+/// Finds the correct capability and shares the region with the target domain.
+int share_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right_t access);
+
 #endif
