@@ -35,10 +35,13 @@ typedef enum capa_rtype_t {
 /// Status of a domain capability.
 typedef enum domain_status_t {
   None = 0,
-  Unsealed = 1,
-  Sealed = 2,
-  Channel = 3,
-  Transition = 4,
+  Unsealed = 1 << 0,
+  Sealed = 1 << 1,
+  Channel = 1 << 2,
+  Transition = 1 << 3,
+  // These are used for the ABI calls
+  Spawn = 1 << 4,
+  Comm = 1 << 5,
 } domain_status_t;
 
 /// Region Access Rights

@@ -19,6 +19,15 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
 /// Sets the result inside the provided handle.
 int create_domain(unsigned long spawn, unsigned long comm);
 
+/// Seal the domain.
+/// This function first creates a channel for the child domain and then seals it.
+int seal_domain(
+    domain_id_t id,
+    unsigned long core_map,
+    unsigned long cr3,
+    unsigned long rip,
+    unsigned long rsp);
+
 /// Duplicate capability.
 int duplicate_capa(
     capability_t** left,

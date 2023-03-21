@@ -134,9 +134,10 @@ int create_domain(unsigned long spawn, unsigned long comm)
   child->manipulate = child_capa; 
   dll_init_list(&(child->capabilities));
   dll_init_elem(child, list);
-  revocation_capa->left = NULL;
+  revocation_capa->left = local_domain.self;
   revocation_capa->right = child_capa;
   child_capa->parent = revocation_capa;
+  local_domain.self->parent = revocation_capa;
 
   // Add the child to the local_domain.
   dll_add(&(local_domain.children), child, list);
@@ -158,6 +159,56 @@ fail_revocation:
 fail_child:
   local_domain.dealloc(child);
 fail:
+  return FAILURE;
+}
+
+int seal_domain(
+    domain_id_t id,
+    unsigned long core_map,
+    unsigned long cr3,
+    unsigned long rip,
+    unsigned long rsp)
+{
+  child_domain_t* child = NULL;
+  capability_t* new_unsealed = NULL;
+  capability_t* channel = NULL;
+  unsigned long tpe = 0;
+
+  // Find the target domain.
+  dll_foreach(&(local_domain.children), child, list) {
+    if (child->id == id) {
+      // Found the right one.
+      break;
+    }
+  }
+
+  // We were not able to find the child.
+  if (child == NULL) {
+    local_domain.print("Error[grant_region]: child not found."); 
+    goto failure;
+  }
+  
+  // Create the transfer.
+  if (child->manipulate->access.domain.status != Unsealed) {
+    local_domain.print("Error[seal_domain]: we do not have an unseal capa.");
+    goto failure;
+  }
+  tpe = Unsealed ;
+  if (child->manipulate->access.domain.info.capas.spawn != 0) {
+    tpe |= Spawn;
+  }
+  if (child->manipulate->access.domain.info.capas.comm != 0) {
+    tpe |= Comm;
+  }
+  if (duplicate_capa(
+        &new_unsealed, &channel, child->manipulate, 
+        tpe, 0, 0, Channel, 0, 0) != SUCCESS) {
+    goto failure;
+  }
+  
+  // TODO update everything.
+  
+failure:
   return FAILURE;
 }
 
