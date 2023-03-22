@@ -4,9 +4,10 @@ all: encl_loader.so encl.so test-enclave test
 ELF_LIB=../elf64
 ENCL_DRIVER=../../../modules/libraries/enclave
 CAPA_LIB=../../../programs/libs/capabilities
+DLL_LIB= ../dll
 
 # The includes we depend on.
-INCLUDES=-I$(ELF_LIB)/include -I$(ENCL_DRIVER)/include -I$(CAPA_LIB)/include
+INCLUDES=-I$(ELF_LIB)/include -I$(ENCL_DRIVER)/include -I$(DLL_LIB)/include -I$(CAPA_LIB)/include
 
 # Configs for dyn libs.
 ELF_CONFIG= -Wl,-R $(ELF_LIB) -L$(ELF_LIB)
