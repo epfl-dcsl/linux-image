@@ -171,7 +171,7 @@ int seal_domain(
 {
   child_domain_t* child = NULL;
   capability_t* new_unsealed = NULL;
-  capability_t* channel = NULL;
+  capability_t* channel = NULL, *transition = NULL;
   unsigned long tpe = 0;
 
   // Find the target domain.
@@ -185,6 +185,12 @@ int seal_domain(
   // We were not able to find the child.
   if (child == NULL) {
     local_domain.print("Error[grant_region]: child not found."); 
+    goto failure;
+  }
+
+  transition = (capability_t*) local_domain.alloc(sizeof(capability_t));
+  if (transition == NULL) {
+    local_domain.print("Error[seal_domain]: could not allocate transition capa.");
     goto failure;
   }
   
@@ -206,8 +212,30 @@ int seal_domain(
     goto failure;
   }
   
-  // TODO update everything.
+  // Replace manipulate with the channel. 
+  dll_remove(&(local_domain.capabilities), new_unsealed, list);
+  dll_add(&(child->capabilities), new_unsealed, list);
+  dll_add(&(child->capabilities), child->manipulate, list); 
+  dll_remove(&(local_domain.capabilities), channel, list);
+  child->manipulate = channel;
+
+  // Now seal.
+  if (tyche_seal(&(transition->local_id), new_unsealed->local_id,
+        core_map, cr3, rip, rsp) != SUCCESS) {
+    local_domain.print("Error[seal_domain]: error sealing domain.");
+    goto failure_transition;
+  }
+  if (enumerate_capa(transition->local_id, transition) != SUCCESS) {
+    local_domain.print("Error[seal_domain]: error enumerating transition.");
+    goto failure_transition;
+  }
+
+  dll_add(&(child->transitions), transition, list);
   
+  // All done !
+  return SUCCESS;
+failure_transition:
+  local_domain.dealloc(transition);
 failure:
   return FAILURE;
 }

@@ -53,6 +53,35 @@ fail:
   return FAILURE;
 }
 
+int tyche_seal(
+    capa_index_t* transition, 
+    capa_index_t unsealed,
+    unsigned long core_map,
+    unsigned long cr3,
+    unsigned long rip, 
+    unsigned long rsp)
+{
+  vmcall_frame_t frame = {
+    .vmcall = TYCHE_SEAL_DOMAIN,
+    .arg_1 = unsealed,
+    .arg_2 = core_map,
+    .arg_3 = cr3, 
+    .arg_4 = rip,
+    .arg_5 = rsp,
+  };
+  if (transition == NULL) {
+    goto failure;
+  }
+
+  if (tyche_call(&frame) != SUCCESS) {
+    goto failure;
+  }
+  *transition = frame.value_1;
+  return SUCCESS;
+failure:
+  return FAILURE;
+}
+
 int tyche_duplicate(
     capa_index_t* left,
     capa_index_t* right,

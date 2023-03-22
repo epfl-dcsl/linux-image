@@ -148,6 +148,9 @@ typedef struct child_domain_t {
   // All the revocations for resources passed to the domain.
   dll_list(struct capability_t, capabilities);
 
+  // All the transition handles to this domain.
+  dll_list(struct capability_t, transitions);
+
   // This structure can be put in a double-linked list.
   dll_elem(struct child_domain_t, list);
 } child_domain_t;

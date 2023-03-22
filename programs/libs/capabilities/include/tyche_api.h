@@ -54,6 +54,14 @@ int tyche_create_domain(
     unsigned long spawn,
     unsigned long comm);
 
+int tyche_seal(
+    capa_index_t* transition,
+    capa_index_t unsealed,
+    unsigned long core_map,
+    unsigned long cr3,
+    unsigned long rip,
+    unsigned long rsp);
+
 int tyche_duplicate(
     capa_index_t* left,
     capa_index_t* right,
