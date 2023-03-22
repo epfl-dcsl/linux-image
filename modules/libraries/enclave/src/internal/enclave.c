@@ -55,15 +55,15 @@ static int region_check(struct tyche_encl_add_region_t* region)
 
   // Check access rights, we do not allow execute with write.
   if (region->flags == 0) {
-    printk(KERN_NOTICE "[TE]: missing flags in region.\n");
+    printk(KERN_NOTICE "[TE]: missing access in region.\n");
     goto failure;
   }
-  if ((region->flags & TE_EXEC) && (region->flags & TE_WRITE)) {
+  if ((region->flags & MEM_WRITE) && (region->flags & MEM_EXEC)) {
     printk(KERN_NOTICE "[TE]: region is both exec and write.\n");
     goto failure;
   }
 
-  if (region->tpe > MaxTpe || region->tpe < MinTpe) {
+  if (region->tpe != SHARED && region->tpe != CONFIDENTIAL) {
     printk(KERN_NOTICE "[TE]: unknown region type.\n");
     goto failure;
   }
@@ -340,8 +340,8 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
   pa_region = NULL;
   dll_foreach(&(encl->all_pages), pa_region, globals) {
     // The call will set the handle in the pa_region.
-    if (tyche_split_grant(encl, pa_region) != 0) {
-      pr_err("[TE]: tyche_split grant failed %d.\n", pa_region->tpe);
+    if (tyche_share_grant(encl, pa_region) != 0) {
+      pr_err("[TE]: tyche_share_grant failed %d.\n", pa_region->tpe);
       goto failure;
     }
   }
@@ -457,7 +457,7 @@ int delete_enclave(tyche_encl_handle_t handle)
   return 0;
 }
 
-int enclave_transition(struct tyche_encl_transition_t* transition)
+/*int enclave_transition(struct tyche_encl_transition_t* transition)
 {
   struct enclave_t* encl = NULL;
   unsigned long result = 0;
@@ -489,7 +489,7 @@ int enclave_transition(struct tyche_encl_transition_t* transition)
       );
   encl->invoke = index;
   return result;
-}
+}*/
 
 // —————————————————————————————— Internal API —————————————————————————————— //
 int add_merge_global(struct enclave_t* enclave, struct pa_region_t* region)

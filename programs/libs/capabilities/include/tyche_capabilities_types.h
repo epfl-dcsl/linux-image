@@ -10,6 +10,7 @@
 #define SUCCESS (0)
 #define FAILURE (-1)
 
+#define ALL_CORES_MAP (~(unsigned long)(0))
 /// Internal definition of our types so we can move to 32 bits.
 typedef long long unsigned int paddr_t;
 

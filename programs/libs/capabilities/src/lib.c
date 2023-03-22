@@ -7,16 +7,18 @@ domain_t local_domain;
 
 // ———————————————————————— Private helper functions ———————————————————————— //
 void local_memcpy(void* dest, void *src, unsigned long n) {
+  unsigned long i = 0;
   char *csrc = (char*) src;
   char *cdest = (char*) dest;
-  for (unsigned long i = 0; i < n; i++) {
+  for (i = 0; i < n; i++) {
     cdest[i] = csrc[i];
   }
 }
 
 void local_memset(void* dest, unsigned long n) {
+  unsigned long i = 0;
   char *cdest = (char*) dest;
-  for (unsigned long i = 0; i < n; i++) {
+  for (i = 0; i < n; i++) {
     cdest[i] = 0;
   }
 }
@@ -40,11 +42,12 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
   // Start enumerating the domain's capabilities.
   for (i = 0; i < CAPAS_PER_DOMAIN; i++) {
     capability_t tmp_capa;
+    capability_t *capa = NULL;
     if (enumerate_capa(i, &tmp_capa) != 0) {
       // Unable to read, move on. 
       continue; 
     };
-    capability_t* capa = (capability_t*) (local_domain.alloc(sizeof(capability_t)));
+    capa = (capability_t*) (local_domain.alloc(sizeof(capability_t)));
     if (capa == NULL) {
       local_domain.print("Unable to allocate a capability!\n");
       goto failure;
@@ -82,7 +85,7 @@ fail:
   return FAILURE;
 }
 
-int create_domain(unsigned long spawn, unsigned long comm)
+int create_domain(domain_id_t* id, unsigned long spawn, unsigned long comm)
 {
   capa_index_t new_self = -1;
   capability_t* child_capa = NULL;
@@ -90,7 +93,7 @@ int create_domain(unsigned long spawn, unsigned long comm)
   child_domain_t* child = NULL;
 
   // Initialization was not performed correctly.
-  if (local_domain.self == NULL) {
+  if (local_domain.self == NULL || id == NULL) {
     goto fail;
   }
 
@@ -149,6 +152,7 @@ int create_domain(unsigned long spawn, unsigned long comm)
   dll_add(&(local_domain.capabilities), child_capa, list);
 
   // All done!
+  *id = child->id;
   return SUCCESS;
 
   // Failure paths.
@@ -418,7 +422,6 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
     goto failure;
   }
 
-grant:
   if (tyche_grant(child->manipulate->local_id, capa->local_id,
         start, end, (unsigned long) access) != SUCCESS) {
     goto failure;
@@ -511,5 +514,12 @@ int share_region(
 fail_left:
   local_domain.dealloc(left);
 failure:
+  return FAILURE;
+}
+
+
+int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
+{
+  //TODO implement.
   return FAILURE;
 }

@@ -12,10 +12,10 @@
 #include "tyche_capabilities_types.h"
 
 // ———————————————————— Constants Defined in the Module ————————————————————— //
-#define TE_READ ((uint64_t)CAPA_READ)
-#define TE_WRITE ((uint64_t)CAPA_WRITE)
-#define TE_EXEC ((uint64_t)CAPA_EXEC)
-#define TE_USER ((uint64_t)(CAPA_MAX << 1))
+#define TE_READ ((uint64_t)MEM_READ)
+#define TE_WRITE ((uint64_t)MEM_WRITE)
+#define TE_EXEC ((uint64_t)MEM_EXEC)
+#define TE_SUPER ((uint64_t)MEM_SUPER)
 #define TE_DEFAULT ((uint64_t)(TE_READ | TE_WRITE | TE_EXEC))
 
 // —————————————————————— Types Exposed by the Library —————————————————————— //
@@ -26,7 +26,10 @@ struct tyche_encl_create_t {
   tyche_encl_handle_t handle;
 };
 
-typedef capability_type_t tyche_encl_mapping_t;
+typedef enum tyche_encl_mapping_t {
+  SHARED = 0,
+  CONFIDENTIAL = 1,
+} tyche_encl_mapping_t;
 
 /// Message type to add a new region.
 struct tyche_encl_add_region_t {
@@ -42,8 +45,8 @@ struct tyche_encl_add_region_t {
   /// Source for the content of the region.
   uint64_t src;
 
-  /// Protection flags (RWXU) for this region.
-  uint64_t flags;
+  /// Access right (RWXU) for this region.
+  memory_access_right_t flags;
 
   /// Type of mapping: Confidential or Shared.
   tyche_encl_mapping_t tpe;
@@ -68,7 +71,8 @@ struct tyche_encl_commit_t {
   uint64_t entry;
 };
 
-/// Structure to describe a transition.
+/*
+ * /// Structure to describe a transition.
 struct tyche_encl_transition_t {
   /// The enclave handle to transition into.
   tyche_encl_handle_t handle;
@@ -76,7 +80,7 @@ struct tyche_encl_transition_t {
   /// Argument for this transition.
   void* args;
 };
-
+*/
 // ——————————————————————————— Tyche Enclave IOCTL API —————————————————————— //
 #define TYCHE_ENCLAVE_DBG _IOR('a', 'a', uint64_t*)
 #define TYCHE_ENCLAVE_CREATE _IOR('a', 'b', struct tyche_encl_create_t*)
