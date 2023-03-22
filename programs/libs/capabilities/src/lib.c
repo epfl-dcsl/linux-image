@@ -547,11 +547,36 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
     goto failure;
   }
   
-  // Remove the capability.
+  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
+    local_domain.print("Error[revoke_region]: unable to enumerate the revoked capa");
+    goto failure;
+  }
+
+  // Remove the capability and add it back to the local domain.
   dll_remove(&(child->capabilities), capa, list);
-  // Now check if we can merge it back.
-  // This should be the right of the tree.
-  //TODO(aghosn) continue here
+  dll_add(&(local_domain.capabilities), capa, list);
+
+  // Check if we can merge it back, this should be the right of the tree.
+  if (capa->parent != NULL && capa->parent->right == capa &&
+      capa->parent->left != NULL && capa->parent->left->capa_type == Resource) {
+    capability_t *parent = capa->parent;
+    if (tyche_revoke(capa->parent->local_id) != SUCCESS) {
+      goto failure;
+    }
+    dll_remove(&(local_domain.capabilities), capa, list);
+    dll_remove(&(local_domain.capabilities), (parent->left), list);
+    local_domain.dealloc(parent->left);
+    local_domain.dealloc(parent->right);
+    parent->left = NULL;
+    parent->right = NULL;
+    if (enumerate_capa(parent->local_id, parent) != SUCCESS) {
+      local_domain.print("Error[revoke_region]: unable to enumerate after the merge.");
+      goto failure;
+    }
+  }
+
+  // All done!
+  return SUCCESS;
 failure:
   return FAILURE;
 }
