@@ -254,6 +254,7 @@ int duplicate_capa(
     unsigned long a2_1,
     unsigned long a2_2,
     unsigned long a2_3) {
+  //TODO create locals and only set left and right at the end.
   if (left == NULL || right == NULL || capa == NULL) {
     goto failure;
   }
@@ -441,7 +442,7 @@ failure:
 int share_region(
     domain_id_t id, paddr_t start, paddr_t end, memory_access_right_t access) {
   child_domain_t* child = NULL;
-  capability_t* capa = NULL, *left = NULL;
+  capability_t* capa = NULL, *left = NULL, *right = NULL;
 
   // Quick checks.
   if (start >= end) {
@@ -481,38 +482,30 @@ int share_region(
     goto failure;
   }
 
-  // A share is less complex than a grant because we do not need to carve out
-  // the address space, but we need to keep track of how to merge things back.
-  left = (capability_t*) local_domain.alloc(sizeof(capability_t)); 
-  if (left == NULL) {
+  // A share is less complex than a grant because it doesn't require carving out.
+  // We still create a capability that matches exactly the desired interval.
+  // This allows to revoke that region independently of subsequent shares.
+  if (duplicate_capa(&left, &right, capa, capa->access.region.start,
+        capa->access.region.end, capa->access.region.flags,
+        start, end, (unsigned long) access) != SUCCESS) {
     goto failure;
   }
-  if (tyche_share(&(left->local_id), child->manipulate->local_id,
-        capa->local_id, start, end, (unsigned long) access) != SUCCESS) {
-    goto fail_left;
+
+  // We implement the share as a grant of the cut out region.
+  if (tyche_grant(child->manipulate->local_id, right->local_id,
+        start, end, (unsigned long) access) != SUCCESS) {
+    local_domain.print("Failed sharing the region with the domain.");
+    goto failure;
   }
-  
+
   // Now we update the capabilities.
-  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
+  if (enumerate_capa(right->local_id, right) != SUCCESS) {
     local_domain.print("We failed enumerating the revocation after share.");
-    goto fail_left;
+    goto failure;
   }
-  dll_remove(&(local_domain.capabilities), capa, list);
-  dll_add(&(child->capabilities), capa, list);
-  capa->left = left;
-  capa->right = NULL;
+  dll_remove(&(local_domain.capabilities), right, list);
+  dll_add(&(child->capabilities), right, list);
 
-  if (enumerate_capa(left->local_id, left)) {
-    local_domain.print("We failed enumerating the remainder of the share.");
-    goto fail_left;
-  }
-  left->left = NULL;
-  left->right = NULL;
-  left->parent = capa;
-  dll_add(&(local_domain.capabilities), left, list);
-
-fail_left:
-  local_domain.dealloc(left);
 failure:
   return FAILURE;
 }
@@ -520,6 +513,45 @@ failure:
 
 int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
 {
-  //TODO implement.
+  child_domain_t* child = NULL;
+
+  // Find the target domain.
+  dll_foreach(&(local_domain.children), child, list) {
+    if (child->id == id) {
+      // Found the right one.
+      break;
+    }
+  }
+
+  // We were not able to find the child.
+  if (child == NULL) {
+    local_domain.print("Error[grant_region]: child not found."); 
+    goto failure;
+  }
+
+  // Try to find the region.
+  
+failure:
+  return FAILURE;
+}
+
+int switch_domain(domain_id_t id)
+{
+  child_domain_t* child = NULL;
+
+  // Find the target domain.
+  dll_foreach(&(local_domain.children), child, list) {
+    if (child->id == id) {
+      // Found the right one.
+      break;
+    }
+  }
+
+  // We were not able to find the child.
+  if (child == NULL) {
+    local_domain.print("Error[grant_region]: child not found."); 
+    goto failure;
+  }
+failure:
   return FAILURE;
 }
