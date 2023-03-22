@@ -446,7 +446,7 @@ int share_region(
 
   // Quick checks.
   if (start >= end) {
-    local_domain.print("Error[grant_region]: start is greater or equal to end.\n");
+    local_domain.print("Error[share_region]: start is greater or equal to end.\n");
     goto failure;
   }
 
@@ -460,7 +460,7 @@ int share_region(
 
   // We were not able to find the child.
   if (child == NULL) {
-    local_domain.print("Error[grant_region]: child not found."); 
+    local_domain.print("Error[share_region]: child not found."); 
     goto failure;
   }
 
@@ -510,10 +510,11 @@ failure:
   return FAILURE;
 }
 
-
+// TODO for now we only handle exact matches.
 int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
 {
   child_domain_t* child = NULL;
+  capability_t* capa = NULL;
 
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
@@ -525,12 +526,32 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
 
   // We were not able to find the child.
   if (child == NULL) {
-    local_domain.print("Error[grant_region]: child not found."); 
+    local_domain.print("Error[revoke_region]: child not found."); 
     goto failure;
   }
 
   // Try to find the region.
+  dll_foreach(&(child->capabilities), capa, list) {
+    if (capa->resource_type == Region && capa->access.region.start == start 
+        && capa->access.region.end == end) {
+      // Found it!
+      break;
+    } 
+  }
+  if (capa == NULL) {
+    local_domain.print("Error[revoke_region]: unable to find region to revoke.");
+    goto failure;
+  }
+
+  if (tyche_revoke(capa->local_id) != SUCCESS) {
+    goto failure;
+  }
   
+  // Remove the capability.
+  dll_remove(&(child->capabilities), capa, list);
+  // Now check if we can merge it back.
+  // This should be the right of the tree.
+  //TODO(aghosn) continue here
 failure:
   return FAILURE;
 }

@@ -166,3 +166,17 @@ int tyche_share(
 failure:
   return FAILURE;
 }
+
+int tyche_revoke(capa_index_t id)
+{
+  vmcall_frame_t frame = {
+    .vmcall = TYCHE_REVOKE,
+    .arg_1 = id,
+  };
+  if (tyche_call(&frame) != SUCCESS) {
+    goto failure;
+  }
+  return SUCCESS;
+failure:
+  return FAILURE;
+}

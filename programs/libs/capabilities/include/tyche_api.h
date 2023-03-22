@@ -88,4 +88,6 @@ int tyche_share(
     unsigned long a2,
     unsigned long a3);
 
+int tyche_revoke(capa_index_t id);
+
 #endif
