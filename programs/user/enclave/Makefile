@@ -11,6 +11,7 @@ INCLUDES= -Iinclude/ -I$(ELF64)/include -I$(LOADER)/include -I$(DRIVER)/include 
 
 # Enclave includes
 TRUSTED_INCLUDES=-I$(CAPA)/include
+LIBS=../../libs
 CAPA_LIB=$(CAPA)/libcapabilities.a
 
 # Dynamic libraries
@@ -20,10 +21,8 @@ DYN_LIBS= -l:encl_loader.so -lelf64
 DISK_PATH = /tmp/mount/tyche/
 INSTALL_PATH = /tyche
 
-a.out: src/main.c enclave 
+a.out: src/main.c enclave libs
 	mkdir -p libs
-	make -C $(ELF64)
-	make -C $(LOADER)
 	cp $(ELF64)/libelf64.so libs/
 	cp $(LOADER)/encl_loader.so libs/
 	cp $(LOADER)/encl.so libs/
@@ -31,6 +30,11 @@ a.out: src/main.c enclave
 
 enclave: trusted/main.c trusted/asm.S $(CAPA_LIB)
 	gcc -g $(INCLUDES) -nostdlib -static -o $@ $^
+
+$(CAPA_LIB): libs
+
+libs:
+	make -C ../../libs
 
 install: a.out enclave
 	mkdir -p $(INSTALL_PATH)/enclaves
