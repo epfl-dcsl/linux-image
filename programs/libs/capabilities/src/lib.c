@@ -177,6 +177,7 @@ int seal_domain(
   capability_t* new_unsealed = NULL;
   capability_t* channel = NULL, *transition = NULL;
   unsigned long tpe = 0;
+  transition_t *trans_wrapper = NULL;
 
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
@@ -197,11 +198,17 @@ int seal_domain(
     local_domain.print("Error[seal_domain]: could not allocate transition capa.");
     goto failure;
   }
+ 
+  trans_wrapper = (transition_t*) local_domain.alloc(sizeof(transition_t));
+  if (trans_wrapper == NULL) {
+    local_domain.print("Error[seal_domain]: Unable to allocate transition_t wrapper");
+    goto failure_transition;
+  }
   
   // Create the transfer.
   if (child->manipulate->access.domain.status != Unsealed) {
     local_domain.print("Error[seal_domain]: we do not have an unseal capa.");
-    goto failure;
+    goto failure_dealloc;
   }
   tpe = Unsealed ;
   if (child->manipulate->access.domain.info.capas.spawn != 0) {
@@ -213,7 +220,7 @@ int seal_domain(
   if (duplicate_capa(
         &new_unsealed, &channel, child->manipulate, 
         tpe, 0, 0, Channel, 0, 0) != SUCCESS) {
-    goto failure;
+    goto failure_dealloc;
   }
   
   // Replace manipulate with the channel. 
@@ -227,17 +234,23 @@ int seal_domain(
   if (tyche_seal(&(transition->local_id), new_unsealed->local_id,
         core_map, cr3, rip, rsp) != SUCCESS) {
     local_domain.print("Error[seal_domain]: error sealing domain.");
-    goto failure_transition;
+    goto failure_dealloc;
   }
   if (enumerate_capa(transition->local_id, transition) != SUCCESS) {
     local_domain.print("Error[seal_domain]: error enumerating transition.");
-    goto failure_transition;
+    goto failure_dealloc;
   }
 
-  dll_add(&(child->transitions), transition, list);
+
+  trans_wrapper->lock = TRANSITION_UNLOCKED;
+  trans_wrapper->transition = transition; 
+  dll_init_elem(trans_wrapper, list);
+  dll_add(&(child->transitions), trans_wrapper, list);
   
   // All done !
   return SUCCESS;
+failure_dealloc:
+  local_domain.dealloc(trans_wrapper);
 failure_transition:
   local_domain.dealloc(transition);
 failure:
@@ -595,7 +608,7 @@ int switch_domain(domain_id_t id)
 
   // We were not able to find the child.
   if (child == NULL) {
-    local_domain.print("Error[grant_region]: child not found."); 
+    local_domain.print("Error[switch_domain]: child not found."); 
     goto failure;
   }
 failure:

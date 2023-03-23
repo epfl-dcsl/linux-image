@@ -131,6 +131,19 @@ typedef struct domain_t {
   dll_list(struct capability_t, capabilities);
 } domain_t;
 
+typedef enum transition_lock_t {
+  TRANSITION_UNLOCKED = 0,
+  TRANSITION_LOCKED = 1,
+} transition_lock_t;
+
+/// Wrapper around transition handles.
+/// This allows to add a lock.
+typedef struct transition_t {
+  transition_lock_t lock;
+  capability_t* transition;
+  dll_elem(struct transition_t, list);
+} transition_t;
+
 /// Represents a child domain.
 /// We keep track of:
 /// 1) The main communication channel.
@@ -150,7 +163,7 @@ typedef struct child_domain_t {
   dll_list(struct capability_t, capabilities);
 
   // All the transition handles to this domain.
-  dll_list(struct capability_t, transitions);
+  dll_list(struct transition_t, transitions);
 
   // This structure can be put in a double-linked list.
   dll_elem(struct child_domain_t, list);
