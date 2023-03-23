@@ -88,7 +88,7 @@ static struct enclave_t* find_enclave(tyche_encl_handle_t handle)
   }
   // Check that the task calling is the one that created the enclave.
   if (encl->pid != current->pid) {
-    printk(KERN_NOTICE "[TE]: Attempt to add a page to enclave [%lx] from a different task!\n", handle);
+    printk(KERN_NOTICE "[TE]: Attempt to add a page to enclave [%llx] from a different task!\n", handle);
     printk(KERN_NOTICE " Expected: %d; got %d\n", encl->pid, current->pid);
     return NULL;
   }
@@ -136,7 +136,7 @@ int add_enclave(tyche_encl_handle_t handle)
     dll_remove((&enclaves), encl, list);
     return -1;
   }
-  printk(KERN_NOTICE "[TE]: A new enclave[%lx] was created by %d.\n", handle, current->pid); 
+  printk(KERN_NOTICE "[TE]: A new enclave[%llx] was created by %d.\n", handle, current->pid); 
   return 0;
 }
 

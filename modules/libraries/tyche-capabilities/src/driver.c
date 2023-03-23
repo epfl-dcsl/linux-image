@@ -38,12 +38,12 @@ static void __exit tyche_capabilities_exit(void)
 
 // ————————————————————————————— API forwarders ————————————————————————————— //
 
-int tc_create_domain(domain_id_t* handle, unsigned long spawn, unsigned long comm)
+int tc_create_domain(domain_id_t* handle, usize spawn, usize comm)
 {
   return create_domain(handle, spawn, comm);
 }
 
-int tc_seal_domain(domain_id_t dom, unsigned long core_map, paddr_t cr3, paddr_t rip, paddr_t rsp)
+int tc_seal_domain(domain_id_t dom, usize core_map, paddr_t cr3, paddr_t rip, paddr_t rsp)
 {
   return seal_domain(dom, core_map, cr3, rip, rsp);
 }
