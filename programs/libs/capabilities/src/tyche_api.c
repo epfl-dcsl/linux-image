@@ -3,7 +3,7 @@
 /// Simple generic vmcall implementation.
 int tyche_call(vmcall_frame_t* frame)
 {
-  unsigned long result = FAILURE;
+  usize result = FAILURE;
   asm volatile(
     "movq %7, %%rax\n\t"
     "movq %8, %%rdi\n\t"
@@ -32,8 +32,8 @@ int tyche_create_domain(
     capa_index_t* self,
     capa_index_t* child,
     capa_index_t* revocation,
-    unsigned long spawn,
-    unsigned long comm)
+    usize spawn,
+    usize comm)
 {
   vmcall_frame_t frame;
   if (self == NULL || child == NULL || revocation == NULL) {
@@ -56,10 +56,10 @@ fail:
 int tyche_seal(
     capa_index_t* transition, 
     capa_index_t unsealed,
-    unsigned long core_map,
-    unsigned long cr3,
-    unsigned long rip, 
-    unsigned long rsp)
+    usize core_map,
+    usize cr3,
+    usize rip, 
+    usize rsp)
 {
   vmcall_frame_t frame = {
     .vmcall = TYCHE_SEAL_DOMAIN,
@@ -86,12 +86,12 @@ int tyche_duplicate(
     capa_index_t* left,
     capa_index_t* right,
     capa_index_t capa,
-    unsigned long a1_1,
-    unsigned long a1_2,
-    unsigned long a1_3,
-    unsigned long a2_1,
-    unsigned long a2_2,
-    unsigned long a2_3)
+    usize a1_1,
+    usize a1_2,
+    usize a1_3,
+    usize a2_1,
+    usize a2_2,
+    usize a2_3)
 {
   vmcall_frame_t frame = {
     TYCHE_DUPLICATE,
@@ -118,9 +118,9 @@ failure:
 int tyche_grant(
     capa_index_t dest,
     capa_index_t capa,
-    unsigned long a1,
-    unsigned long a2,
-    unsigned long a3)
+    usize a1,
+    usize a2,
+    usize a3)
 {
   vmcall_frame_t frame = {
     .vmcall = TYCHE_GRANT,
@@ -146,9 +146,9 @@ int tyche_share(
     capa_index_t* left,
     capa_index_t dest,
     capa_index_t capa,
-    unsigned long a1,
-    unsigned long a2,
-    unsigned long a3)
+    usize a1,
+    usize a2,
+    usize a3)
 {
   vmcall_frame_t frame = {
     .vmcall = TYCHE_SHARE,
@@ -179,4 +179,14 @@ int tyche_revoke(capa_index_t id)
   return SUCCESS;
 failure:
   return FAILURE;
+}
+
+int tyche_switch(capa_index_t transition_handle, usize cpu)
+{
+  vmcall_frame_t frame = {
+    .vmcall = TYCHE_SWITCH,
+    .arg_1 = transition_handle,
+    .arg_2 = cpu,
+  };
+  return tyche_call(&frame);
 }

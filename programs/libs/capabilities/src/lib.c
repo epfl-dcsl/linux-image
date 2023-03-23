@@ -85,7 +85,7 @@ fail:
   return FAILURE;
 }
 
-int create_domain(domain_id_t* id, unsigned long spawn, unsigned long comm)
+int create_domain(domain_id_t* id, usize spawn, usize comm)
 {
   capa_index_t new_self = -1;
   capability_t* child_capa = NULL;
@@ -168,15 +168,15 @@ fail:
 
 int seal_domain(
     domain_id_t id,
-    unsigned long core_map,
-    unsigned long cr3,
-    unsigned long rip,
-    unsigned long rsp)
+    usize core_map,
+    usize cr3,
+    usize rip,
+    usize rsp)
 {
   child_domain_t* child = NULL;
   capability_t* new_unsealed = NULL;
   capability_t* channel = NULL, *transition = NULL;
-  unsigned long tpe = 0;
+  usize tpe = 0;
   transition_t *trans_wrapper = NULL;
 
   // Find the target domain.
@@ -261,12 +261,12 @@ int duplicate_capa(
     capability_t** left,
     capability_t** right,
     capability_t* capa,
-    unsigned long a1_1,
-    unsigned long a1_2,
-    unsigned long a1_3,
-    unsigned long a2_1,
-    unsigned long a2_2,
-    unsigned long a2_3) {
+    usize a1_1,
+    usize a1_2,
+    usize a1_3,
+    usize a2_1,
+    usize a2_2,
+    usize a2_3) {
   //TODO create locals and only set left and right at the end.
   if (left == NULL || right == NULL || capa == NULL) {
     goto failure;
@@ -437,7 +437,7 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
   }
 
   if (tyche_grant(child->manipulate->local_id, capa->local_id,
-        start, end, (unsigned long) access) != SUCCESS) {
+        start, end, (usize) access) != SUCCESS) {
     goto failure;
   }
 
@@ -500,13 +500,13 @@ int share_region(
   // This allows to revoke that region independently of subsequent shares.
   if (duplicate_capa(&left, &right, capa, capa->access.region.start,
         capa->access.region.end, capa->access.region.flags,
-        start, end, (unsigned long) access) != SUCCESS) {
+        start, end, (usize) access) != SUCCESS) {
     goto failure;
   }
 
   // We implement the share as a grant of the cut out region.
   if (tyche_grant(child->manipulate->local_id, right->local_id,
-        start, end, (unsigned long) access) != SUCCESS) {
+        start, end, (usize) access) != SUCCESS) {
     local_domain.print("Failed sharing the region with the domain.");
     goto failure;
   }
@@ -594,9 +594,11 @@ failure:
   return FAILURE;
 }
 
+//TODO nothing thread safe in this implementation for the moment.
 int switch_domain(domain_id_t id)
 {
   child_domain_t* child = NULL;
+  transition_t* wrapper = NULL;
 
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
@@ -611,6 +613,25 @@ int switch_domain(domain_id_t id)
     local_domain.print("Error[switch_domain]: child not found."); 
     goto failure;
   }
+
+  // Acquire a transition handle.
+  dll_foreach(&(child->transitions), wrapper, list) {
+    if (wrapper->lock == TRANSITION_UNLOCKED) {
+      wrapper->lock = TRANSITION_LOCKED;
+      break;
+    }
+  }
+  if (wrapper == NULL) {
+    local_domain.print("Error[switch_domain]: Unable to find a transition handle!");
+    goto failure;
+  }
+  if (tyche_switch(wrapper->transition->local_id, NO_CPU_SWITCH) != SUCCESS) {
+    local_domain.print("Error[switch_domain]: failed to perform a switch");
+    goto failure;
+  }
+  // We are back from the switch, unlock the wrapper.
+  wrapper->lock = TRANSITION_UNLOCKED;
+  return SUCCESS;
 failure:
   return FAILURE;
 }

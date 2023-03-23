@@ -25,24 +25,24 @@ typedef enum tyche_monitor_call_t {
 /// A type to pass arguments and receive when calling tyche.
 typedef struct vmcall_frame_t {
   // Vmcall id.
-  unsigned long vmcall;
+  usize vmcall;
 
   // Arguments.
-  unsigned long arg_1;
-  unsigned long arg_2;
-  unsigned long arg_3;
-  unsigned long arg_4;
-  unsigned long arg_5;
-  unsigned long arg_6;
-  unsigned long arg_7;
+  usize arg_1;
+  usize arg_2;
+  usize arg_3;
+  usize arg_4;
+  usize arg_5;
+  usize arg_6;
+  usize arg_7;
 
   // Results.
-  unsigned long value_1;
-  unsigned long value_2;
-  unsigned long value_3;
-  unsigned long value_4;
-  unsigned long value_5;
-  unsigned long value_6;
+  usize value_1;
+  usize value_2;
+  usize value_3;
+  usize value_4;
+  usize value_5;
+  usize value_6;
 } vmcall_frame_t;
 
 // —————————————————————————————————— API ——————————————————————————————————— //
@@ -51,43 +51,45 @@ int tyche_create_domain(
     capa_index_t* self,
     capa_index_t* child,
     capa_index_t* revocation,
-    unsigned long spawn,
-    unsigned long comm);
+    usize spawn,
+    usize comm);
 
 int tyche_seal(
     capa_index_t* transition,
     capa_index_t unsealed,
-    unsigned long core_map,
-    unsigned long cr3,
-    unsigned long rip,
-    unsigned long rsp);
+    usize core_map,
+    usize cr3,
+    usize rip,
+    usize rsp);
 
 int tyche_duplicate(
     capa_index_t* left,
     capa_index_t* right,
     capa_index_t capa,
-    unsigned long a1_1,
-    unsigned long a1_2,
-    unsigned long a1_3,
-    unsigned long a2_1,
-    unsigned long a2_2,
-    unsigned long a2_3);
+    usize a1_1,
+    usize a1_2,
+    usize a1_3,
+    usize a2_1,
+    usize a2_2,
+    usize a2_3);
 
 int tyche_grant(
     capa_index_t dest,
     capa_index_t capa,
-    unsigned long a1,
-    unsigned long a2,
-    unsigned long a3);
+    usize a1,
+    usize a2,
+    usize a3);
 
 int tyche_share(
     capa_index_t* left,
     capa_index_t dest,
     capa_index_t capa,
-    unsigned long a1,
-    unsigned long a2,
-    unsigned long a3);
+    usize a1,
+    usize a2,
+    usize a3);
 
 int tyche_revoke(capa_index_t id);
+
+int tyche_switch(capa_index_t transition_handle, usize cpu);
 
 #endif

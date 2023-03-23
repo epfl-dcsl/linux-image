@@ -17,28 +17,28 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
 
 /// Creates a new domain.
 /// Sets the result inside the provided id handle.
-int create_domain(domain_id_t* id, unsigned long spawn, unsigned long comm);
+int create_domain(domain_id_t* id, usize spawn, usize comm);
 
 /// Seal the domain.
 /// This function first creates a channel for the child domain and then seals it.
 int seal_domain(
     domain_id_t id,
-    unsigned long core_map,
-    unsigned long cr3,
-    unsigned long rip,
-    unsigned long rsp);
+    usize core_map,
+    usize cr3,
+    usize rip,
+    usize rsp);
 
 /// Duplicate capability.
 int duplicate_capa(
     capability_t** left,
     capability_t** right,
     capability_t* capa,
-    unsigned long a1_1,
-    unsigned long a1_2,
-    unsigned long a1_3,
-    unsigned long a2_1,
-    unsigned long a2_2,
-    unsigned long a2_3);
+    usize a1_1,
+    usize a1_2,
+    usize a1_3,
+    usize a2_1,
+    usize a2_2,
+    usize a2_3);
 
 /// Grant a memory region.
 /// Finds the correct capability and grants the region to the target domain.

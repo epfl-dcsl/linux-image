@@ -10,15 +10,18 @@
 #define SUCCESS (0)
 #define FAILURE (-1)
 
-#define ALL_CORES_MAP (~(unsigned long)(0))
+typedef unsigned long long usize;
+
+#define ALL_CORES_MAP (~((usize)0))
+#define NO_CPU_SWITCH (~((usize)0))
 /// Internal definition of our types so we can move to 32 bits.
 typedef long long unsigned int paddr_t;
 
 /// Internal definition of domain id.
-typedef unsigned long domain_id_t;
+typedef unsigned long long domain_id_t;
 
 /// Internal definition of index.
-typedef unsigned long capa_index_t;
+typedef unsigned long long capa_index_t;
 
 /// Mirrors the types defined in crates/capabilities/src/lib.rs.
 typedef enum capa_type_t {
@@ -96,7 +99,7 @@ typedef struct capability_t {
   capa_descriptor_t access;
 
   // This is stored for convenience but might not be up-to-date.
-  unsigned long last_read_ref_count;
+  usize last_read_ref_count;
 
   // Tree structure.
   struct capability_t* parent;
