@@ -147,7 +147,7 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       handle.handle = tyche_ids++;
 
       //TODO initialize some internal structure etc. to keep track of the enclave.
-      if(add_enclave(handle.handle)) {
+      if(add_enclave(handle.handle, 1 ,1)) {
         pr_err("[TE]: Error adding the enclave!\n");
         return -1;
       }

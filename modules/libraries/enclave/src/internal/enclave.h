@@ -84,7 +84,7 @@ struct enclave_t {
 
 // —————————————————————————————— Enclave API ——————————————————————————————— //
 void enclave_init(void);
-int add_enclave(tyche_encl_handle_t handle);
+int add_enclave(tyche_encl_handle_t handle, usize spawn, usize comm);
 int add_region(struct tyche_encl_add_region_t* region);
 int add_stack_region(struct tyche_encl_add_region_t* region);
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region);

@@ -9,13 +9,12 @@ extern int tc_share_region(domain_id_t dom, paddr_t start, paddr_t end, memory_a
 extern int tc_revoke_region(domain_id_t dom, paddr_t start, paddr_t end);
 
 
-int tyche_domain_create(struct enclave_t* encl)
+int tyche_domain_create(struct enclave_t* encl, usize spawn, usize comm)
 {
   if (encl == NULL) {
     return -1;
   }
-  //TODO allow the enclave to configure spawn and comm
-  return tc_create_domain(&(encl->tyche_handle), 1, 1);
+  return tc_create_domain(&(encl->tyche_handle), spawn, comm);
 }
 
 int tyche_share_grant(struct enclave_t* enclave, struct pa_region_t* region)

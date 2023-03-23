@@ -224,8 +224,8 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
       .start = (uint64_t)library_plugin->plugin,
       .end = ((uint64_t)(library_plugin->plugin)) + library_plugin->size,
       .src = (uint64_t)library_plugin->plugin,
-      .flags = TE_READ|TE_EXEC|TE_USER,
-      .tpe = Shared,
+      .flags = TE_READ|TE_EXEC,
+      .tpe = SHARED,
     };
     if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
       LOG("create_enclave unable to add encl.so region.\n");
@@ -263,7 +263,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
       .end = segment.p_vaddr + enclave->sizes[i],
       .src = (uint64_t)enclave->mappings[i],
       .flags = flags,
-      .tpe = Confidential,
+      .tpe = CONFIDENTIAL,
     };
     // Call the driver with segment.p_vaddr, p_vaddr + pmemsz, p_flags
     if(ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
@@ -517,7 +517,8 @@ int enclave_driver_transition(tyche_encl_handle_t handle, void* args)
     LOG("create_enclave fd invalid %d\n", errno);
     return -1;
   }
-  struct tyche_encl_transition_t transition = {
+  //TODO implement
+ /* struct tyche_encl_transition_t transition = {
     .handle = handle,
     .args = args,
   };
@@ -525,7 +526,7 @@ int enclave_driver_transition(tyche_encl_handle_t handle, void* args)
   if (ret != 0) {
     LOG("driver refused transition: %d\n", ret);
     return -1;
-  }
+  }*/
   close(driver_fd);
   return 0;
 }

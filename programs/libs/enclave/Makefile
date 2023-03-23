@@ -16,7 +16,7 @@ encl_loader.so: loader/lib.c
 	gcc -g $(INCLUDES) -Iinclude/ $(ELF_CONFIG) -shared -o $@ -fPIC $^ -lelf64
 
 encl.so: runtime/lib.c runtime/entry.S
-	gcc -g -Iinclude/ -shared -o $@ -fPIC $^
+	gcc -g -I$(INCLUDES) -Iinclude/ -shared -o $@ -fPIC $^
 
 test-enclave: tests/enclave.c encl_loader.so encl.so
 	gcc -g -nostdlib -fPIC -o $@ $<

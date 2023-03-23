@@ -102,7 +102,7 @@ void enclave_init(void)
 
 /// Add a new enclave.
 /// The handle must be fresh.
-int add_enclave(tyche_encl_handle_t handle)
+int add_enclave(tyche_encl_handle_t handle, usize spawn, usize comm)
 {
   struct enclave_t* encl = NULL;
   // Check whether the enclave exists.
@@ -131,7 +131,7 @@ int add_enclave(tyche_encl_handle_t handle)
   dll_add((&enclaves), encl, list);
 
   // Invoke tyche.
-  if(tyche_domain_create(encl) != 0) {
+  if(tyche_domain_create(encl, spawn, comm) != 0) {
     pr_err("[TE]: tyche rejected new enclave creation.\n");
     dll_remove((&enclaves), encl, list);
     return -1;
