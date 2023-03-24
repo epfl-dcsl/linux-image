@@ -2,12 +2,13 @@
 #include "tyche_vmcall.h"
 #include "tyche_capabilities_types.h"
 
-extern int tc_create_domain(domain_id_t* handle, unsigned long spawn, unsigned long comm);
+extern int tc_create_domain(domain_id_t* handle, usize spawn, usize comm);
 extern int tc_seal_domain(domain_id_t dom, unsigned long core_map, paddr_t cr3, paddr_t entry, paddr_t stack);
 extern int tc_grant_region(domain_id_t dom, paddr_t start, paddr_t end, memory_access_right_t access);
 extern int tc_share_region(domain_id_t dom, paddr_t start, paddr_t end, memory_access_right_t access);
 extern int tc_revoke_region(domain_id_t dom, paddr_t start, paddr_t end);
-
+extern int tc_switch_domain(domain_id_t id);
+extern int tc_revoke_domain(domain_id_t id);
 
 int tyche_domain_create(struct enclave_t* encl, usize spawn, usize comm)
 {
@@ -42,4 +43,14 @@ int tyche_seal_enclave(struct enclave_t* enclave)
 int tyche_revoke_region(domain_id_t dom, paddr_t start, paddr_t end)
 {
   return tc_revoke_region(dom, start, end);
+}
+
+int tyche_switch_domain(domain_id_t id)
+{
+  return tc_switch_domain(id);
+}
+
+int tyche_revoke_domain(domain_id_t id)
+{
+  return tc_revoke_domain(id);
 }

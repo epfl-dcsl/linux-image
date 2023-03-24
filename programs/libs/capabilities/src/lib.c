@@ -524,6 +524,51 @@ failure:
 }
 
 // TODO for now we only handle exact matches.
+int internal_revoke(child_domain_t* child, capability_t* capa)
+{
+  if (child == NULL || capa == NULL) {
+    local_domain.print("Error[internal_revoke]: null args.");
+    goto failure;
+  }
+
+  if (tyche_revoke(capa->local_id) != SUCCESS) {
+    goto failure;
+  }
+  
+  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
+    local_domain.print("Error[internal_revoke]: unable to enumerate the revoked capa");
+    goto failure;
+  }
+
+  // Remove the capability and add it back to the local domain.
+  dll_remove(&(child->capabilities), capa, list);
+  dll_add(&(local_domain.capabilities), capa, list);
+
+  // Check if we can merge it back, this should be the right of the tree.
+  if (capa->parent != NULL && capa->parent->right == capa &&
+      capa->parent->left != NULL && capa->parent->left->capa_type == Resource) {
+    capability_t *parent = capa->parent;
+    if (tyche_revoke(capa->parent->local_id) != SUCCESS) {
+      goto failure;
+    }
+    dll_remove(&(local_domain.capabilities), capa, list);
+    dll_remove(&(local_domain.capabilities), (parent->left), list);
+    local_domain.dealloc(parent->left);
+    local_domain.dealloc(parent->right);
+    parent->left = NULL;
+    parent->right = NULL;
+    if (enumerate_capa(parent->local_id, parent) != SUCCESS) {
+      local_domain.print("Error[internal_revoke]: unable to enumerate after the merge.");
+      goto failure;
+    }
+  }
+
+  // All done!
+  return SUCCESS;
+failure:
+  return FAILURE;
+}
+
 int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
 {
   child_domain_t* child = NULL;
@@ -556,40 +601,7 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
     goto failure;
   }
 
-  if (tyche_revoke(capa->local_id) != SUCCESS) {
-    goto failure;
-  }
-  
-  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
-    local_domain.print("Error[revoke_region]: unable to enumerate the revoked capa");
-    goto failure;
-  }
-
-  // Remove the capability and add it back to the local domain.
-  dll_remove(&(child->capabilities), capa, list);
-  dll_add(&(local_domain.capabilities), capa, list);
-
-  // Check if we can merge it back, this should be the right of the tree.
-  if (capa->parent != NULL && capa->parent->right == capa &&
-      capa->parent->left != NULL && capa->parent->left->capa_type == Resource) {
-    capability_t *parent = capa->parent;
-    if (tyche_revoke(capa->parent->local_id) != SUCCESS) {
-      goto failure;
-    }
-    dll_remove(&(local_domain.capabilities), capa, list);
-    dll_remove(&(local_domain.capabilities), (parent->left), list);
-    local_domain.dealloc(parent->left);
-    local_domain.dealloc(parent->right);
-    parent->left = NULL;
-    parent->right = NULL;
-    if (enumerate_capa(parent->local_id, parent) != SUCCESS) {
-      local_domain.print("Error[revoke_region]: unable to enumerate after the merge.");
-      goto failure;
-    }
-  }
-
-  // All done!
-  return SUCCESS;
+  return internal_revoke(child, capa);
 failure:
   return FAILURE;
 }
@@ -631,6 +643,66 @@ int switch_domain(domain_id_t id)
   }
   // We are back from the switch, unlock the wrapper.
   wrapper->lock = TRANSITION_UNLOCKED;
+  return SUCCESS;
+failure:
+  return FAILURE;
+}
+
+int revoke_domain(domain_id_t id)
+{
+  child_domain_t* child = NULL;
+  capability_t* capa = NULL;
+  transition_t* wrapper = NULL;
+
+  // Find the target domain.
+  dll_foreach(&(local_domain.children), child, list) {
+    if (child->id == id) {
+      // Found the right one.
+      break;
+    }
+  }
+
+  // We were not able to find the child.
+  if (child == NULL) {
+    local_domain.print("Error[revoke_domain]: unable to find the child.");
+    goto failure;
+  }
+
+  // First go through all the capabilities and revoke them.
+  while (!dll_is_empty(&(child->capabilities))) {
+    capa = child->capabilities.head;
+    if (capa->left != NULL) {
+      // By construction this should never happen.
+      local_domain.print("Error[revoke_domain]: The revoked capa has non empty left.");
+      goto failure;
+    }
+    if (capa->right != NULL) {
+      // By construction this should never happen.
+      local_domain.print("Error[revoke_domain]: The revoked capa has non empty right.");
+      goto failure;
+    }
+    internal_revoke(child, capa);
+  }
+  // Take care of the transitions + manipulate.
+  // No need to call revoke, they should be handled by the cascading revocation.
+  while (!dll_is_empty(&(child->transitions))) {
+    wrapper = child->transitions.head;
+    capa = wrapper->transition;
+    dll_remove(&(child->transitions), wrapper, list);
+    local_domain.dealloc(capa);
+    local_domain.dealloc(wrapper);
+  }
+  // Remove the manipulate too.
+  local_domain.dealloc(child->manipulate);
+
+  //TODO how do I clean up the rest of the capabilities for self?
+  if (tyche_revoke(child->revoke->local_id) != SUCCESS) {
+    goto failure;
+  }
+  local_domain.dealloc(child->revoke);
+  dll_remove(&(local_domain.children), child, list);
+  local_domain.dealloc(child);
+
   return SUCCESS;
 failure:
   return FAILURE;

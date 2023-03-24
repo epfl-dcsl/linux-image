@@ -71,23 +71,13 @@ struct tyche_encl_commit_t {
   uint64_t entry;
 };
 
-/*
- * /// Structure to describe a transition.
-struct tyche_encl_transition_t {
-  /// The enclave handle to transition into.
-  tyche_encl_handle_t handle;
-
-  /// Argument for this transition.
-  void* args;
-};
-*/
 // ——————————————————————————— Tyche Enclave IOCTL API —————————————————————— //
 #define TYCHE_ENCLAVE_DBG _IOR('a', 'a', uint64_t*)
 #define TYCHE_ENCLAVE_CREATE _IOR('a', 'b', struct tyche_encl_create_t*)
 #define TYCHE_ENCLAVE_ADD_REGION _IOW('a', 'c', struct tyche_encl_add_region_t*)
 #define TYCHE_ENCLAVE_COMMIT _IOWR('a', 'd', struct tyche_encl_commit_t*)
 #define TYCHE_ENCLAVE_ADD_STACK _IOW('a', 'e', struct tyche_encl_add_region_t*)
-#define TYCHE_TRANSITION _IOR('a', 'f', struct tyche_encl_transition_t*)
+#define TYCHE_TRANSITION _IOR('a', 'f', tyche_encl_handle_t)
 #define TYCHE_ENCLAVE_DELETE _IOR('a', 'g', tyche_encl_handle_t)
 
 #endif
