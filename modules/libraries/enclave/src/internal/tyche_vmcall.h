@@ -9,4 +9,5 @@ int tyche_share_grant(struct enclave_t* enclave, struct pa_region_t* region);
 int tyche_seal_enclave(struct enclave_t* enclave);
 int tyche_revoke_region(domain_id_t dom, paddr_t start, paddr_t end);
 int tyche_switch_domain(domain_id_t id);
+int tyche_revoke_domain(domain_id_t id);
 #endif

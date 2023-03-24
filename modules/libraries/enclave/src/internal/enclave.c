@@ -452,8 +452,9 @@ int delete_enclave(tyche_encl_handle_t handle)
   dll_remove(&(enclaves), encl, list);
 
   // Delete the tyche domain.
-  if (tyche_delete_domain(encl->tyche_handle) != SUCCESS) {
-
+  if (tyche_revoke_domain(encl->tyche_handle) != SUCCESS) {
+    pr_err("[TE] unable to delete enclave\n");
+    return FAILURE;
   } 
   kfree(encl);
   return SUCCESS;
