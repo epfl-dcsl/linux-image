@@ -73,6 +73,9 @@ int init(capa_alloc_t allocator, capa_dealloc_t deallocator, capa_dbg_print_t pr
     // Add the capability to the list.
     dll_add(&(local_domain.capabilities), capa, list);
   }
+
+  // For debugging, remove afterwards.
+  local_domain.print("[init] success");
   return SUCCESS;
 failure:
   while(!dll_is_empty(&local_domain.capabilities))
@@ -91,23 +94,28 @@ int create_domain(domain_id_t* id, usize spawn, usize comm)
   capability_t* child_capa = NULL;
   capability_t* revocation_capa = NULL; 
   child_domain_t* child = NULL;
-
+  
+  local_domain.print("[create_domain] start");
   // Initialization was not performed correctly.
   if (local_domain.self == NULL || id == NULL) {
+    local_domain.print("Error[create_domain] self is null or id null.");
     goto fail;
   }
 
   // Perform allocations.
   child = (child_domain_t*) local_domain.alloc(sizeof(child_domain_t));
   if (child == NULL) {
+    local_domain.print("Error[create_domain] failed to allocate child.");
     goto fail;
   }
   revocation_capa = (capability_t*) local_domain.alloc(sizeof(capability_t));
   if (revocation_capa == NULL) {
+    local_domain.print("Error[create_domain] failed to allocate revocation.");
     goto fail_child;
   }
   child_capa = (capability_t*) local_domain.alloc(sizeof(capability_t));
   if (child_capa == NULL) {
+    local_domain.print("Error[create_domain] failed to allocate child_capa.");
     goto fail_revocation; 
   }
 
@@ -117,17 +125,21 @@ int create_domain(domain_id_t* id, usize spawn, usize comm)
         &(child_capa->local_id),
         &(revocation_capa->local_id),
         spawn, comm) != 0) {
+    local_domain.print("Error[create_domain] failed to create domain.");
     goto fail;
   }
 
   // Populate the capabilities.
   if (enumerate_capa(new_self, local_domain.self) != 0) {
+    local_domain.print("Error[create_domain] enumerate left failed.");
     goto fail_child_capa;
   }
   if (enumerate_capa(child_capa->local_id, child_capa) != 0) {
+    local_domain.print("Error[create_domain] enumerate child_capa failed.");
     goto fail_child_capa;
   }
   if (enumerate_capa(revocation_capa->local_id, revocation_capa) != 0) {
+    local_domain.print("Error[create_domain] enumerate revocation_capa failed.");
     goto fail_child_capa;
   }
 
@@ -153,6 +165,7 @@ int create_domain(domain_id_t* id, usize spawn, usize comm)
 
   // All done!
   *id = child->id;
+  local_domain.print("[create_domain] Success");
   return SUCCESS;
 
   // Failure paths.
@@ -179,6 +192,7 @@ int seal_domain(
   usize tpe = 0;
   transition_t *trans_wrapper = NULL;
 
+  local_domain.print("[seal_domain] start");
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
     if (child->id == id) {
@@ -248,6 +262,7 @@ int seal_domain(
   dll_add(&(child->transitions), trans_wrapper, list);
   
   // All done !
+  local_domain.print("[seal_domain] Success");
   return SUCCESS;
 failure_dealloc:
   local_domain.dealloc(trans_wrapper);
@@ -275,10 +290,12 @@ int duplicate_capa(
   // Attempt to allocate left and right.
   *left = (capability_t*) local_domain.alloc(sizeof(capability_t));
   if (*left == NULL) {
+    local_domain.print("Error[duplicate_capa] left alloc failed.");
     goto failure;
   }
   *right = (capability_t*) local_domain.alloc(sizeof(capability_t));
   if (*right == NULL) {
+    local_domain.print("Error[duplicate_capa] right alloc failed.");
     goto fail_left;
   }
 
@@ -286,6 +303,7 @@ int duplicate_capa(
   if (tyche_duplicate(
         &((*left)->local_id), &((*right)->local_id), capa->local_id,
         a1_1, a1_2, a1_3, a2_1, a2_2, a2_3 ) != SUCCESS) {
+    local_domain.print("Error[duplicate_capa] duplicate rejected.");
     goto fail_right; 
   }
 
@@ -337,6 +355,7 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
   child_domain_t* child = NULL;
   capability_t* capa = NULL;
 
+  local_domain.print("[grant_region] start");
   // Quick checks.
   if (start >= end) {
     local_domain.print("Error[grant_region]: start is greater or equal to end.\n");
@@ -371,6 +390,7 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
 
   // We were not able to find the capability.
   if (capa == NULL) {
+    local_domain.print("Error[grant_region] unable to find the containing capa.");
     goto failure;
   }
 
@@ -385,6 +405,7 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
     if (duplicate_capa(&left, &right, capa,
           capa->access.region.start, start, capa->access.region.flags,
           start, capa->access.region.end, capa->access.region.flags) != SUCCESS) {
+      local_domain.print("Error[grant_region] middle case duplicate failed.");
       goto failure;
     }
     // Update the capa to point to the right.
@@ -423,6 +444,7 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
     // Do the duplicate.
     if (duplicate_capa(&left, &right, capa, s, m, capa->access.region.flags,
           m, e, capa->access.region.flags) != SUCCESS) {
+      local_domain.print("Error[grant_region] left or right duplicate case failed.");
       goto failure;
     }
    
@@ -446,6 +468,7 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
   dll_add(&(child->capabilities), capa, list);
 
   // We are done!
+  local_domain.print("[grant_region] Success");
   return SUCCESS;
 failure:
   return FAILURE;
@@ -457,6 +480,7 @@ int share_region(
   child_domain_t* child = NULL;
   capability_t* capa = NULL, *left = NULL, *right = NULL;
 
+  local_domain.print("[share_region] start");
   // Quick checks.
   if (start >= end) {
     local_domain.print("Error[share_region]: start is greater or equal to end.\n");
@@ -519,6 +543,9 @@ int share_region(
   dll_remove(&(local_domain.capabilities), right, list);
   dll_add(&(child->capabilities), right, list);
 
+  // All done!
+  local_domain.print("[share_region] Success");
+  return SUCCESS;
 failure:
   return FAILURE;
 }

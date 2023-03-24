@@ -68,6 +68,11 @@ int tc_switch_domain(domain_id_t id)
   return switch_domain(id);
 }
 
+int tc_revoke_domain(domain_id_t id)
+{
+  return revoke_domain(id);
+}
+
 // ————————————————————————— Module's Registration —————————————————————————— //
 
 module_init(tyche_capabilities_init);
@@ -76,4 +81,6 @@ EXPORT_SYMBOL(tc_create_domain);
 EXPORT_SYMBOL(tc_seal_domain);
 EXPORT_SYMBOL(tc_grant_region);
 EXPORT_SYMBOL(tc_share_region);
+EXPORT_SYMBOL(tc_revoke_region);
 EXPORT_SYMBOL(tc_switch_domain);
+EXPORT_SYMBOL(tc_revoke_domain);

@@ -13,6 +13,7 @@ extern int tc_revoke_domain(domain_id_t id);
 int tyche_domain_create(struct enclave_t* encl, usize spawn, usize comm)
 {
   if (encl == NULL) {
+    pr_err("[TE]: encl is NULL!\n");
     return -1;
   }
   return tc_create_domain(&(encl->tyche_handle), spawn, comm);

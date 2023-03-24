@@ -5,9 +5,10 @@ ELF64=../../libs/elf64
 LOADER=../../libs/enclave
 DRIVER=../../../modules/libraries/enclave
 CAPA=../../libs/capabilities
+DLL=../../libs/dll
 
 # All the includes
-INCLUDES= -Iinclude/ -I$(ELF64)/include -I$(LOADER)/include -I$(DRIVER)/include -I$(CAPA)/include
+INCLUDES= -Iinclude/ -I$(DLL)/include -I$(ELF64)/include -I$(LOADER)/include -I$(DRIVER)/include -I$(CAPA)/include
 
 # Enclave includes
 TRUSTED_INCLUDES=-I$(CAPA)/include

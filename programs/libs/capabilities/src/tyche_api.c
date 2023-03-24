@@ -95,6 +95,7 @@ int tyche_duplicate(
 {
   vmcall_frame_t frame = {
     TYCHE_DUPLICATE,
+    capa,
     a1_1,
     a1_2,
     a1_3,
