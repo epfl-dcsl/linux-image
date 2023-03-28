@@ -665,6 +665,7 @@ int switch_domain(domain_id_t id)
 {
   child_domain_t* child = NULL;
   transition_t* wrapper = NULL;
+  local_domain.print("[switch_domain] start");
 
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
@@ -695,6 +696,7 @@ int switch_domain(domain_id_t id)
     local_domain.print("Error[switch_domain]: failed to perform a switch");
     goto failure;
   }
+  local_domain.print("[switch_domain] Came back from the switch");
   // We are back from the switch, unlock the wrapper.
   wrapper->lock = TRANSITION_UNLOCKED;
   return SUCCESS;

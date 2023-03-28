@@ -517,16 +517,12 @@ int enclave_driver_transition(tyche_encl_handle_t handle, void* args)
     LOG("create_enclave fd invalid %d\n", errno);
     return -1;
   }
-  //TODO implement
- /* struct tyche_encl_transition_t transition = {
-    .handle = handle,
-    .args = args,
-  };
-  int ret = ioctl(driver_fd, TYCHE_TRANSITION, &transition);
+
+  int ret = ioctl(driver_fd, TYCHE_TRANSITION, handle);
   if (ret != 0) {
     LOG("driver refused transition: %d\n", ret);
     return -1;
-  }*/
+  }
   close(driver_fd);
   return 0;
 }
