@@ -163,7 +163,7 @@ typedef struct child_domain_t {
   capability_t* revoke;
 
   // All the revocations for resources passed to the domain.
-  dll_list(struct capability_t, capabilities);
+  dll_list(struct capability_t, revocations);
 
   // All the transition handles to this domain.
   dll_list(struct transition_t, transitions);

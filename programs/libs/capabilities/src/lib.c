@@ -147,21 +147,22 @@ int create_domain(domain_id_t* id, usize spawn, usize comm)
   child->id = local_domain.id_counter++;
   child->revoke = revocation_capa;
   child->manipulate = child_capa; 
-  dll_init_list(&(child->capabilities));
+  dll_init_list(&(child->revocations));
   dll_init_elem(child, list);
-  revocation_capa->left = local_domain.self;
-  revocation_capa->right = child_capa;
-  child_capa->parent = revocation_capa;
-  local_domain.self->parent = revocation_capa;
+  revocation_capa->left = NULL; //local_domain.self;
+  revocation_capa->right = NULL; //child_capa;
+  //child_capa->parent = revocation_capa;
+  //local_domain.self->parent = revocation_capa;
 
   // Add the child to the local_domain.
   dll_add(&(local_domain.children), child, list);
 
+  //TODO not sure about that.
   // Add the capabilities to the local domain.
   dll_init_elem(revocation_capa, list);
   dll_init_elem(child_capa, list);
-  dll_add(&(local_domain.capabilities), revocation_capa, list);
-  dll_add(&(local_domain.capabilities), child_capa, list);
+  //dll_add(&(local_domain.capabilities), revocation_capa, list);
+  //dll_add(&(local_domain.capabilities), child_capa, list);
 
   // All done!
   *id = child->id;
@@ -189,6 +190,7 @@ int seal_domain(
   child_domain_t* child = NULL;
   capability_t* new_unsealed = NULL;
   capability_t* channel = NULL, *transition = NULL;
+  capa_index_t to_seal = 0;
   usize tpe = 0;
   transition_t *trans_wrapper = NULL;
 
@@ -234,22 +236,32 @@ int seal_domain(
   if (duplicate_capa(
         &new_unsealed, &channel, child->manipulate, 
         tpe, 0, 0, Channel, 0, 0) != SUCCESS) {
+    local_domain.print("Error[seal_domain] unable to create a channel.");
     goto failure_dealloc;
   }
   
-  // Replace manipulate with the channel. 
+  // Cleanup phase:
+  // We can get rid of: 
+  // 1. Manipulate -> it was an unsealed, it will get destroyed by revoke_domain.
+  // 2. new_unsealed -> it will get revoked as well.
+  // Then we have to fix all the tree pointers.
   dll_remove(&(local_domain.capabilities), new_unsealed, list);
-  dll_add(&(child->capabilities), new_unsealed, list);
-  dll_add(&(child->capabilities), child->manipulate, list); 
+  to_seal = new_unsealed->local_id;
+  local_domain.dealloc(new_unsealed);
+  local_domain.dealloc(child->manipulate);
+
+  // Fix the child's manipulate.
   dll_remove(&(local_domain.capabilities), channel, list);
   child->manipulate = channel;
+  child->manipulate->parent = NULL;
 
   // Now seal.
-  if (tyche_seal(&(transition->local_id), new_unsealed->local_id,
+  if (tyche_seal(&(transition->local_id), to_seal,
         core_map, cr3, rip, rsp) != SUCCESS) {
     local_domain.print("Error[seal_domain]: error sealing domain.");
     goto failure_dealloc;
   }
+
   if (enumerate_capa(transition->local_id, transition) != SUCCESS) {
     local_domain.print("Error[seal_domain]: error enumerating transition.");
     goto failure_dealloc;
@@ -282,7 +294,6 @@ int duplicate_capa(
     usize a2_1,
     usize a2_2,
     usize a2_3) {
-  //TODO create locals and only set left and right at the end.
   if (left == NULL || right == NULL || capa == NULL) {
     goto failure;
   }
@@ -463,9 +474,16 @@ int grant_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
     goto failure;
   }
 
+  if (enumerate_capa(capa->local_id, capa) != SUCCESS) {
+    goto failure;
+  }
+
   // Now we update the capabilities.
   dll_remove(&(local_domain.capabilities), capa, list);
-  dll_add(&(child->capabilities), capa, list);
+  if (capa->capa_type != Revocation) {
+    local_domain.print("[DBG] not a revocation 2");
+  }
+  dll_add(&(child->revocations), capa, list);
 
   // We are done!
   local_domain.print("[grant_region] Success");
@@ -524,7 +542,7 @@ int share_region(
   // This allows to revoke that region independently of subsequent shares.
   if (duplicate_capa(&left, &right, capa, capa->access.region.start,
         capa->access.region.end, capa->access.region.flags,
-        start, end, (usize) access) != SUCCESS) {
+        start, end, (usize) capa->access.region.flags) != SUCCESS) {
     goto failure;
   }
 
@@ -541,7 +559,10 @@ int share_region(
     goto failure;
   }
   dll_remove(&(local_domain.capabilities), right, list);
-  dll_add(&(child->capabilities), right, list);
+  if (right->capa_type != Revocation) {
+    local_domain.print("[DBG] not a revocation 3");
+  }
+  dll_add(&(child->revocations), right, list);
 
   // All done!
   local_domain.print("[share_region] Success");
@@ -558,6 +579,11 @@ int internal_revoke(child_domain_t* child, capability_t* capa)
     goto failure;
   }
 
+  if (capa->capa_type != Revocation) {
+    local_domain.print("Error[internal revoke] supplied capability is not a revocation");
+    goto failure;
+  }
+
   if (tyche_revoke(capa->local_id) != SUCCESS) {
     goto failure;
   }
@@ -568,7 +594,7 @@ int internal_revoke(child_domain_t* child, capability_t* capa)
   }
 
   // Remove the capability and add it back to the local domain.
-  dll_remove(&(child->capabilities), capa, list);
+  dll_remove(&(child->revocations), capa, list);
   dll_add(&(local_domain.capabilities), capa, list);
 
   // Check if we can merge it back, this should be the right of the tree.
@@ -600,7 +626,8 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
 {
   child_domain_t* child = NULL;
   capability_t* capa = NULL;
-
+  
+  local_domain.print("[revoke_region] start");
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
     if (child->id == id) {
@@ -616,7 +643,7 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
   }
 
   // Try to find the region.
-  dll_foreach(&(child->capabilities), capa, list) {
+  dll_foreach(&(child->revocations), capa, list) {
     if (capa->resource_type == Region && capa->access.region.start == start 
         && capa->access.region.end == end) {
       // Found it!
@@ -627,7 +654,7 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
     local_domain.print("Error[revoke_region]: unable to find region to revoke.");
     goto failure;
   }
-
+  local_domain.print("[revoke_region] success");
   return internal_revoke(child, capa);
 failure:
   return FAILURE;
@@ -695,9 +722,9 @@ int revoke_domain(domain_id_t id)
     goto failure;
   }
 
-  // First go through all the capabilities and revoke them.
-  while (!dll_is_empty(&(child->capabilities))) {
-    capa = child->capabilities.head;
+  // First go through all the revocations.
+  while (!dll_is_empty(&(child->revocations))) {
+    capa = child->revocations.head;
     if (capa->left != NULL) {
       // By construction this should never happen.
       local_domain.print("Error[revoke_domain]: The revoked capa has non empty left.");
@@ -708,7 +735,10 @@ int revoke_domain(domain_id_t id)
       local_domain.print("Error[revoke_domain]: The revoked capa has non empty right.");
       goto failure;
     }
-    internal_revoke(child, capa);
+    if (internal_revoke(child, capa) != SUCCESS) {
+      local_domain.print("Error[revoke_domain] unable to revoke a capability.");
+      goto failure;
+    }
   }
   // Take care of the transitions + manipulate.
   // No need to call revoke, they should be handled by the cascading revocation.
@@ -722,8 +752,11 @@ int revoke_domain(domain_id_t id)
   // Remove the manipulate too.
   local_domain.dealloc(child->manipulate);
 
-  //TODO how do I clean up the rest of the capabilities for self?
   if (tyche_revoke(child->revoke->local_id) != SUCCESS) {
+    goto failure;
+  }
+  if (enumerate_capa(child->revoke->local_id, local_domain.self) != SUCCESS) {
+    local_domain.print("Error[revoke_domain] Unable to enumerate self");
     goto failure;
   }
   local_domain.dealloc(child->revoke);
