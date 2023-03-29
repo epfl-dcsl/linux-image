@@ -606,10 +606,10 @@ int internal_revoke(child_domain_t* child, capability_t* capa)
       capa->parent->right != NULL &&
       capa->parent->right->capa_type == Resource))) {
     capability_t *parent = capa->parent;
-    if (tyche_revoke(capa->parent->local_id) != SUCCESS) {
+    if (tyche_revoke(parent->local_id) != SUCCESS) {
       goto failure;
     }
-    dll_remove(&(local_domain.capabilities), capa, list);
+    dll_remove(&(local_domain.capabilities), (parent->right), list);
     dll_remove(&(local_domain.capabilities), (parent->left), list);
     local_domain.dealloc(parent->left);
     local_domain.dealloc(parent->right);
@@ -623,8 +623,10 @@ int internal_revoke(child_domain_t* child, capability_t* capa)
   }
 
   // All done!
+  local_domain.print("[internal_revoke] success");
   return SUCCESS;
 failure:
+  local_domain.print("[internal_revoke] failure");
   return FAILURE;
 }
 
@@ -719,6 +721,8 @@ int revoke_domain(domain_id_t id)
   child_domain_t* child = NULL;
   capability_t* capa = NULL;
   transition_t* wrapper = NULL;
+  
+  local_domain.print("[revoke_domain] start");
 
   // Find the target domain.
   dll_foreach(&(local_domain.children), child, list) {
@@ -774,8 +778,10 @@ int revoke_domain(domain_id_t id)
   local_domain.dealloc(child->revoke);
   dll_remove(&(local_domain.children), child, list);
   local_domain.dealloc(child);
-
+  
+  local_domain.print("[revoke_domain] success");
   return SUCCESS;
 failure:
+  local_domain.print("[revoke_domain] failure");
   return FAILURE;
 }
