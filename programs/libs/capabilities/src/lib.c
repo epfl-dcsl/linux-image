@@ -597,9 +597,14 @@ int internal_revoke(child_domain_t* child, capability_t* capa)
   dll_remove(&(child->revocations), capa, list);
   dll_add(&(local_domain.capabilities), capa, list);
 
-  // Check if we can merge it back, this should be the right of the tree.
-  if (capa->parent != NULL && capa->parent->right == capa &&
-      capa->parent->left != NULL && capa->parent->left->capa_type == Resource) {
+  // Check if we can merge everything back.
+  while(capa->parent != NULL && 
+     ((capa->parent->right == capa &&
+        capa->parent->left != NULL && 
+        capa->parent->left->capa_type == Resource) ||
+     (capa->parent->left == capa && 
+      capa->parent->right != NULL &&
+      capa->parent->right->capa_type == Resource))) {
     capability_t *parent = capa->parent;
     if (tyche_revoke(capa->parent->local_id) != SUCCESS) {
       goto failure;
@@ -614,6 +619,7 @@ int internal_revoke(child_domain_t* child, capability_t* capa)
       local_domain.print("Error[internal_revoke]: unable to enumerate after the merge.");
       goto failure;
     }
+    capa = parent;
   }
 
   // All done!
@@ -654,9 +660,13 @@ int revoke_region(domain_id_t id, paddr_t start, paddr_t end)
     local_domain.print("Error[revoke_region]: unable to find region to revoke.");
     goto failure;
   }
+  if (internal_revoke(child, capa) != SUCCESS) {
+    goto failure;
+  }
   local_domain.print("[revoke_region] success");
-  return internal_revoke(child, capa);
+  return SUCCESS;
 failure:
+  local_domain.print("[revoke_region] failure");
   return FAILURE;
 }
 

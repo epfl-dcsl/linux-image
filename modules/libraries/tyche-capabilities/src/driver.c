@@ -12,19 +12,24 @@ MODULE_VERSION("0.01");
 
 // ———————————————————————————————— Helpers ————————————————————————————————— //
 
+// TODO for debugging, remove later.
+static unsigned long long counter_alloc = 0;
+
 static void* local_allocator(unsigned long size)
 {
+  counter_alloc++;
   return kmalloc(size, GFP_KERNEL);
 }
 
 static void local_free(void* ptr)
 {
+  counter_alloc--;
   kfree(ptr);
 }
 
 static void local_print(const char *msg)
 {
-  printk(KERN_ERR "[CAPA]: %s",msg);
+  printk(KERN_ERR "[CAPA | %lld]: %s",counter_alloc, msg);
 }
 
 // —————————————————————— Loading/Unloading  functions —————————————————————— //
