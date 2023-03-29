@@ -13,6 +13,9 @@
 #include "elf64.h"
 // local includes.
 #include "encl_loader.h"
+// Tyche API for vmcall_frame_t.
+#include "tyche_api.h"
+#include "tyche_capabilities_types.h"
 
 // ———————————————————————————————— Logging ————————————————————————————————— //
 
@@ -525,4 +528,23 @@ int enclave_driver_transition(tyche_encl_handle_t handle, void* args)
   }
   close(driver_fd);
   return 0;
+}
+
+int enclave_user_switch(domain_id_t handle, void* args)
+{
+  usize arg_n = (usize) args;
+  usize result = FAILURE; 
+  usize vmcall = TYCHE_SWITCH;
+  asm volatile(
+    "movq %1, %%rax\n\t"
+    "movq %2, %%rdi\n\t"
+    "movq %3, %%rsi\n\t"
+    "movq %4, %%r11\n\t"
+    "vmcall\n\t"
+    "movq %%rax, %0\n\t"
+    : "=rm" (result)
+    : "rm" (vmcall), "rm" (handle), "rm" (NO_CPU_SWITCH), "rm" (arg_n)
+    : "rax", "rdi", "rsi", "r11", "memory"
+      );
+  return (int) result;
 }
