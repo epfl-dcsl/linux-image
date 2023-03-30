@@ -68,9 +68,9 @@ int tc_revoke_region(domain_id_t dom, paddr_t start, paddr_t end)
   return revoke_region(dom, start, end);
 }
 
-int tc_switch_domain(domain_id_t id)
+int tc_switch_domain(domain_id_t id, void* args)
 {
-  return switch_domain(id);
+  return switch_domain(id, args);
 }
 
 int tc_revoke_domain(domain_id_t id)

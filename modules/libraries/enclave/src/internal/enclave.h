@@ -90,7 +90,7 @@ int add_stack_region(struct tyche_encl_add_region_t* region);
 int add_pa_to_region(struct region_t* region, struct pa_region_t** pa_region);
 int commit_enclave(struct tyche_encl_commit_t* handle);
 int delete_enclave(tyche_encl_handle_t handle);
-int switch_enclave(tyche_encl_handle_t handle);
+int switch_enclave(struct tyche_encl_switch_t* sw);
 
 // —————————————————————————— Enclave Internal API —————————————————————————— //
 int add_merge_global(struct enclave_t* enclave, struct pa_region_t* region);

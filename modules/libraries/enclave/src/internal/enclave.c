@@ -334,6 +334,8 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
     pr_err("[TE]: failed to build enclave cr3.\n");
     goto failure;
   }
+  register_cr3(encl->cr3);
+  debugging_cr3();
 
   // All pages should be inside all_pages now.
   // Call tyche to split regions. 
@@ -358,7 +360,6 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
 
   // Give back the handle for the domain.
   commit->domain_handle = encl->tyche_handle;
-  register_cr3(encl->cr3);
   return SUCCESS;
 
 failure:
@@ -460,16 +461,16 @@ int delete_enclave(tyche_encl_handle_t handle)
   return SUCCESS;
 }
 
-int switch_enclave(tyche_encl_handle_t handle)
+int switch_enclave(struct tyche_encl_switch_t* sw)
 {
   struct enclave_t* encl = NULL;
-  encl = find_enclave(handle);
+  encl = find_enclave(sw->handle);
   if (encl == NULL) {
     pr_err("[TE] unable to find enclave for switch.\n");
     return FAILURE;
   }
   //TODO might need a CLI?
-  return tyche_switch_domain(encl->tyche_handle);
+  return tyche_switch_domain(encl->tyche_handle, sw->args);
 }
 
 // —————————————————————————————— Internal API —————————————————————————————— //

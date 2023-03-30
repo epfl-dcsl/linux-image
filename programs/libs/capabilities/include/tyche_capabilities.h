@@ -52,9 +52,9 @@ int share_region(domain_id_t id, paddr_t start, paddr_t end, memory_access_right
 /// Start and end must match existing bounds on a capability.
 int revoke_region(domain_id_t id, paddr_t start, paddr_t end);
 
-/// Switch to the target domain.
+/// Switch to the target domain, sets the args in r11.
 /// Fails if all transition handles are used.
-int switch_domain(domain_id_t id);
+int switch_domain(domain_id_t id, void* args);
 
 /// Delete a domain.
 /// This function goes through all the capabilities in the domain and revokes them.

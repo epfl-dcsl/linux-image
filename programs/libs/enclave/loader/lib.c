@@ -227,7 +227,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
       .start = (uint64_t)library_plugin->plugin,
       .end = ((uint64_t)(library_plugin->plugin)) + library_plugin->size,
       .src = (uint64_t)library_plugin->plugin,
-      .flags = TE_READ|TE_EXEC,
+      .flags = TE_READ|TE_EXEC|TE_SUPER,
       .tpe = SHARED,
     };
     if (ioctl(enclave->driver_fd, TYCHE_ENCLAVE_ADD_REGION, &region) != 0) {
@@ -265,7 +265,7 @@ int create_enclave(load_encl_t* enclave, struct tyche_encl_add_region_t* extras)
       .start = segment.p_vaddr, //TODO this will depend on the elf type.
       .end = segment.p_vaddr + enclave->sizes[i],
       .src = (uint64_t)enclave->mappings[i],
-      .flags = flags,
+      .flags = flags|TE_SUPER,
       .tpe = CONFIDENTIAL,
     };
     // Call the driver with segment.p_vaddr, p_vaddr + pmemsz, p_flags
@@ -513,15 +513,16 @@ int delete_enclave(load_encl_t* encl)
   return 0;
 }
 
-int enclave_driver_transition(tyche_encl_handle_t handle, void* args)
+int enclave_driver_transition(domain_id_t id, void* args)
 {
+  struct tyche_encl_switch_t sw = {id, args};
   int driver_fd = open(ENCL_DRIVER, O_RDWR);
   if (driver_fd < 0) {
     LOG("create_enclave fd invalid %d\n", errno);
     return -1;
   }
 
-  int ret = ioctl(driver_fd, TYCHE_TRANSITION, handle);
+  int ret = ioctl(driver_fd, TYCHE_TRANSITION, &sw);
   if (ret != 0) {
     LOG("driver refused transition: %d\n", ret);
     return -1;

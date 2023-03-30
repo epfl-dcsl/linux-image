@@ -90,6 +90,6 @@ int tyche_share(
 
 int tyche_revoke(capa_index_t id);
 
-int tyche_switch(capa_index_t transition_handle, usize cpu);
+int tyche_switch(capa_index_t transition_handle, usize cpu, void* args);
 
 #endif

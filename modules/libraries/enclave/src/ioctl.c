@@ -108,6 +108,7 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
   struct tyche_encl_create_t handle;
   struct tyche_encl_add_region_t region;
   struct tyche_encl_commit_t commit;
+  struct tyche_encl_switch_t sw;
   //struct tyche_encl_transition_t transition;
   //uint64_t dest = 0;
   switch(cmd)
@@ -117,7 +118,12 @@ long tyche_enclave_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       debugging_transition(arg);
       break;
     case TYCHE_TRANSITION:
-      if(switch_enclave((tyche_encl_handle_t) arg) != 0) {
+     if (copy_from_user(&sw, (struct tyche_encl_switch_t*)arg, sizeof(sw)))
+      {
+        pr_err("[TE]: Error copying switch from user space.\n");
+        return FAILURE;
+      }
+      if(switch_enclave(&sw) != 0) {
         pr_err("[TE]: error enclave_transition.\n");
         return FAILURE;
       }

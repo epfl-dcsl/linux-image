@@ -7,7 +7,7 @@ extern int tc_seal_domain(domain_id_t dom, unsigned long core_map, paddr_t cr3, 
 extern int tc_grant_region(domain_id_t dom, paddr_t start, paddr_t end, memory_access_right_t access);
 extern int tc_share_region(domain_id_t dom, paddr_t start, paddr_t end, memory_access_right_t access);
 extern int tc_revoke_region(domain_id_t dom, paddr_t start, paddr_t end);
-extern int tc_switch_domain(domain_id_t id);
+extern int tc_switch_domain(domain_id_t id, void* args);
 extern int tc_revoke_domain(domain_id_t id);
 
 int tyche_domain_create(struct enclave_t* encl, usize spawn, usize comm)
@@ -46,9 +46,9 @@ int tyche_revoke_region(domain_id_t dom, paddr_t start, paddr_t end)
   return tc_revoke_region(dom, start, end);
 }
 
-int tyche_switch_domain(domain_id_t id)
+int tyche_switch_domain(domain_id_t id, void* args)
 {
-  return tc_switch_domain(id);
+  return tc_switch_domain(id, args);
 }
 
 int tyche_revoke_domain(domain_id_t id)

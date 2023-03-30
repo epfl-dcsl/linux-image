@@ -673,7 +673,7 @@ failure:
 }
 
 //TODO nothing thread safe in this implementation for the moment.
-int switch_domain(domain_id_t id)
+int switch_domain(domain_id_t id, void* args)
 {
   child_domain_t* child = NULL;
   transition_t* wrapper = NULL;
@@ -704,7 +704,7 @@ int switch_domain(domain_id_t id)
     local_domain.print("Error[switch_domain]: Unable to find a transition handle!");
     goto failure;
   }
-  if (tyche_switch(wrapper->transition->local_id, NO_CPU_SWITCH) != SUCCESS) {
+  if (tyche_switch(wrapper->transition->local_id, NO_CPU_SWITCH, args) != SUCCESS) {
     local_domain.print("Error[switch_domain]: failed to perform a switch");
     goto failure;
   }

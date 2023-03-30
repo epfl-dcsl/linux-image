@@ -182,12 +182,26 @@ failure:
   return FAILURE;
 }
 
-int tyche_switch(capa_index_t transition_handle, usize cpu)
+int tyche_switch(capa_index_t transition_handle, usize cpu, void* args)
 {
+  usize result = FAILURE;
   vmcall_frame_t frame = {
     .vmcall = TYCHE_SWITCH,
     .arg_1 = transition_handle,
     .arg_2 = cpu,
+    .arg_3 = (usize) args,
   };
-  return tyche_call(&frame);
+  asm volatile(
+    "cli \n\t"
+    "movq %2, %%rax\n\t"
+    "movq %3, %%rdi\n\t"
+    "movq %4, %%rsi\n\t"
+    "movq %5, %%r11\n\t"
+    "vmcall\n\t"
+    "movq %%rax, %0\n\t"
+    "movq %%rdi, %1\n\t"
+    : "=rm" (result), "=rm" (frame.value_1)
+    : "rm" (frame.vmcall), "rm" (frame.arg_1), "rm" (frame.arg_2), "rm" (frame.arg_3)
+    : "rax", "rdi", "rsi", "r11", "memory");
+  return result;
 }
