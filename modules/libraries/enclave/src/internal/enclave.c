@@ -334,8 +334,9 @@ int commit_enclave(struct tyche_encl_commit_t* commit)
     pr_err("[TE]: failed to build enclave cr3.\n");
     goto failure;
   }
-  register_cr3(encl->cr3);
-  debugging_cr3();
+  //TODO this was for debugging cr3
+  /*register_cr3(encl->cr3);
+  debugging_cr3();*/
 
   // All pages should be inside all_pages now.
   // Call tyche to split regions. 

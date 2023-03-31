@@ -29,7 +29,7 @@ static void local_free(void* ptr)
 
 static void local_print(const char *msg)
 {
-  printk(KERN_ERR "[CAPA | %lld]: %s\n",counter_alloc, msg);
+  printk(KERN_NOTICE "[CAPA | %lld]: %s\n",counter_alloc, msg);
 }
 
 // —————————————————————— Loading/Unloading  functions —————————————————————— //
